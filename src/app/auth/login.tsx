@@ -33,7 +33,7 @@ export default function WelcomeScreen() {
 
                     <View style={styles.loginPanel}>
                         <Text style={styles.panelTitle}>Welcome!</Text>
-                        <Text style={styles.panelSubtitle}>Log in to your account using phone number</Text>
+                        <Text style={styles.panelSubtitle}>Log In to your account using phone number</Text>
 
                         {/* Input Nomor HP dengan Bendera Indonesia */}
                         <View style={styles.inputLabelContainer}>
@@ -88,7 +88,7 @@ export default function WelcomeScreen() {
 
                         <TouchableOpacity
                             style={styles.loginButton}
-                            onPress={() => router.push('../(tabs)')}
+                            onPress={() => router.push('/(tabs)/home')}
                         >
                             <Text style={styles.loginButtonText}>Log In</Text>
                         </TouchableOpacity>
@@ -96,7 +96,7 @@ export default function WelcomeScreen() {
                         <View style={styles.footerContainer}>
                             <Text style={styles.footerText}>Don't have an account?</Text>
                             <TouchableOpacity onPress={() => router.push('../auth/signup')}>
-                                <Text style={styles.signUpLinkText}> Sign up</Text>
+                                <Text style={styles.signUpLinkText}> Sign Up</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
