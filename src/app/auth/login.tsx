@@ -1,66 +1,73 @@
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Image, ImageBackground, StyleSheet, Text, TouchableOpacity, View, TextInput, ScrollView, Dimensions, SafeAreaView } from 'react-native';
+import { Image, ImageBackground, Text, TouchableOpacity, View, TextInput, ScrollView, Dimensions, SafeAreaView } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 
 const { height } = Dimensions.get('window');
 
 export default function WelcomeScreen() {
     const router = useRouter();
-    const [phoneNumber, setPhoneNumber] = useState<string>(''); // TypeScript Fix
-    const [password, setPassword] = useState<string>(''); // TypeScript Fix
+    const [phoneNumber, setPhoneNumber] = useState<string>('');
+    const [password, setPassword] = useState<string>('');
     const [secureText, setSecureText] = useState<boolean>(true);
 
-    // Fungsi dengan penanganan tipe data (TypeScript)
     const handlePhoneChange = (text: string) => {
         const cleaned = text.replace(/[^0-9]/g, '');
         setPhoneNumber(cleaned);
     };
 
     return (
-        <SafeAreaView style={styles.container}>
-            <ImageBackground style={styles.background}>
-                <View style={styles.overlay}>
-                    <View style={styles.headerRow}>
+        <SafeAreaView className="flex-1 bg-black">
+            <ImageBackground className="flex-1 w-full h-full bg-black">
+                {/* Header Section */}
+                <View className="items-center pt-24">
+                    <View className="flex-row items-center px-5">
                         <Image
                             source={require('../../../assets/images/icon_bspid.png')}
-                            style={styles.logo}
+                            className="w-20 h-20 mr-4"
                             resizeMode="contain"
                         />
-                        <View style={styles.textContainer}>
-                            <Text style={styles.titleText}>
+                        <View className="flex-shrink">
+                            <Text className="text-xl font-bold text-[#F68B1E]">
                                 Bang Sampah
-                                <Text style={styles.pintar}> Pintar</Text>
+                                <Text className="text-[#43B02A]"> Pintar</Text>
                             </Text>
-                            <Text style={styles.subtitleText}>
+                            <Text className="text-xs text-gray-400">
                                 Digitalisasi Sampah Menjadi Emas
                             </Text>
                         </View>
                     </View>
                 </View>
 
-                <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end' }} bounces={false}>
+                <ScrollView
+                    contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end' }}
+                    bounces={false}
+                >
+                    {/* Spacer to push content down */}
                     <View style={{ height: height * 0.25 }} />
 
-                    <View style={styles.loginPanel}>
-                        <Text style={styles.panelTitle}>Welcome!</Text>
-                        <Text style={styles.panelSubtitle}>Log In to your account using phone number</Text>
+                    {/* Login Panel */}
+                    <View
+                        className="bg-white rounded-t-[35px] px-6 pt-8 pb-10"
+                        style={{ height: height * 0.75 }}
+                    >
+                        <Text className="text-3xl font-bold text-[#1A1A1A] mb-1">Welcome!</Text>
+                        <Text className="text-sm text-gray-500 mb-8">Log In to your account using phone number</Text>
 
-                        {/* Input Nomor HP dengan Bendera Indonesia */}
-                        <View style={styles.inputLabelContainer}>
-                            <Text style={styles.inputLabel}>Phone Number</Text>
-                            <View style={styles.phoneInputWrapper}>
-                                <View style={styles.countryCodeContainer}>
-                                    {/* Bendera Indonesia menggunakan Image */}
+                        {/* Phone Number Input */}
+                        <View className="mb-5">
+                            <Text className="text-sm font-semibold text-[#1A1A1A] mb-2 ml-1">Phone Number</Text>
+                            <View className="flex-row items-center bg-[#F8F9FB] rounded-full px-4 border border-[#F0F0F0]">
+                                <View className="flex-row items-center">
                                     <Image
                                         source={{ uri: 'https://flagcdn.com/w40/id.png' }}
-                                        style={styles.flagIcon}
+                                        className="w-6 h-4 rounded-sm mr-2"
                                     />
-                                    <Text style={styles.countryCodeText}>+62</Text>
-                                    <View style={styles.divider} />
+                                    <Text className="text-base font-bold text-[#1A1A1A]">+62</Text>
+                                    <View className="w-[1px] h-5 bg-gray-300 mx-3" />
                                 </View>
                                 <TextInput
-                                    style={styles.phoneInput}
+                                    className="flex-1 py-3.5 text-base text-[#1A1A1A]"
                                     placeholder="812-3456-7890"
                                     placeholderTextColor="#A8ABB0"
                                     value={phoneNumber}
@@ -72,11 +79,12 @@ export default function WelcomeScreen() {
                             </View>
                         </View>
 
-                        <View style={styles.inputLabelContainer}>
-                            <Text style={styles.inputLabel}>Password</Text>
-                            <View style={styles.passwordInputContainer}>
+                        {/* Password Input */}
+                        <View className="mb-5">
+                            <Text className="text-sm font-semibold text-[#1A1A1A] mb-2 ml-1">Password</Text>
+                            <View className="flex-row items-center bg-[#F8F9FB] rounded-full px-5 border border-[#F0F0F0]">
                                 <TextInput
-                                    style={styles.passwordInput}
+                                    className="flex-1 py-3.5 text-[#1A1A1A] text-sm"
                                     placeholder="Enter your password"
                                     placeholderTextColor="#A8ABB0"
                                     value={password}
@@ -93,21 +101,24 @@ export default function WelcomeScreen() {
                             </View>
                         </View>
 
-                        <TouchableOpacity style={styles.forgotPasswordButton}>
-                            <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+                        {/* Forgot Password */}
+                        <TouchableOpacity className="self-end mb-6">
+                            <Text className="text-[#00512c] text-xs font-semibold">Forgot Password?</Text>
                         </TouchableOpacity>
 
+                        {/* Login Button */}
                         <TouchableOpacity
-                            style={styles.loginButton}
+                            className="bg-[#F68B1E] py-4 rounded-full items-center mb-10"
                             onPress={() => router.push('/(tabs)/home')}
                         >
-                            <Text style={styles.loginButtonText}>Log In</Text>
+                            <Text className="text-white text-base font-bold">Log In</Text>
                         </TouchableOpacity>
 
-                        <View style={styles.footerContainer}>
-                            <Text style={styles.footerText}>Don't have an account?</Text>
+                        {/* Footer */}
+                        <View className="flex-row justify-center items-center mb-16">
+                            <Text className="text-gray-500 text-sm">Don't have an account?</Text>
                             <TouchableOpacity onPress={() => router.push('../auth/signup')}>
-                                <Text style={styles.signUpLinkText}> Sign Up</Text>
+                                <Text className="text-[#00512c] text-sm font-bold underline pb-1"> Sign Up</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -116,116 +127,3 @@ export default function WelcomeScreen() {
         </SafeAreaView>
     );
 }
-
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#000' },
-    background: { flex: 1, width: '100%', height: '100%', backgroundColor: '#000' },
-    overlay: {
-        alignItems: 'center',
-        paddingTop: 100 // Sesuaikan jarak dari atas
-    },
-    headerRow: {
-        flexDirection: 'row', // Ini kunci supaya menyamping
-        alignItems: 'center', // Supaya logo dan teks sejajar secara vertikal
-        paddingHorizontal: 20,
-    },
-    logo: {
-        width: 80, // Ukuran diperkecil sedikit agar proporsional saat menyamping
-        height: 80,
-        marginRight: 15 // Jarak antara logo dan teks
-    },
-    textContainer: {
-        flexShrink: 1, // Supaya teks tidak 'balapan' keluar layar jika kepanjangan
-    },
-    titleText: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#F68B1E', // Sesuaikan warna karena background kamu gelap
-    },
-    subtitleText: {
-        fontSize: 12,
-        color: '#ccc', // Warna teks sub-judul
-    },
-    pintar: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#43B02A', // Warna khusus untuk kata "Pintar"
-    },
-
-    loginPanel: {
-        flex: 1,
-        backgroundColor: '#fff',
-        borderTopLeftRadius: 35,
-        borderTopRightRadius: 35,
-        paddingHorizontal: 25,
-        paddingTop: 30,
-        paddingBottom: 40,
-        height: height * 0.75, // Pastikan panel mengambil 75% dari tinggi layar
-    },
-    panelTitle: { fontSize: 26, fontWeight: 'bold', color: '#1A1A1A', marginBottom: 5 },
-    panelSubtitle: { fontSize: 14, color: '#666', marginBottom: 30 },
-    inputLabelContainer: { marginBottom: 20 },
-    inputLabel: { fontSize: 14, fontWeight: '600', color: '#1A1A1A', marginBottom: 8, marginLeft: 5 },
-
-    // Style Input Phone & Bendera
-    phoneInputWrapper: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#F8F9FB',
-        borderRadius: 25,
-        paddingHorizontal: 15,
-        borderWidth: 1,
-        borderColor: '#F0F0F0',
-    },
-    countryCodeContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    flagIcon: {
-        width: 24,
-        height: 16,
-        borderRadius: 2,
-        marginRight: 8,
-    },
-    countryCodeText: {
-        fontSize: 15,
-        fontWeight: '700',
-        color: '#1A1A1A',
-    },
-    divider: {
-        width: 1,
-        height: 20,
-        backgroundColor: '#DDD',
-        marginHorizontal: 12,
-    },
-    phoneInput: {
-        flex: 1,
-        paddingVertical: 14,
-        fontSize: 15,
-        color: '#1A1A1A',
-    },
-
-    passwordInputContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#F8F9FB',
-        borderRadius: 25,
-        paddingHorizontal: 20,
-        borderWidth: 1,
-        borderColor: '#F0F0F0',
-    },
-    passwordInput: { flex: 1, paddingVertical: 14, color: '#1A1A1A', fontSize: 14 },
-    forgotPasswordButton: { alignSelf: 'flex-end', marginBottom: 25 },
-    forgotPasswordText: { color: '#00512c', fontSize: 13, fontWeight: '600' },
-    loginButton: {
-        backgroundColor: '#F68B1E',
-        paddingVertical: 16,
-        borderRadius: 25,
-        alignItems: 'center',
-        marginBottom: 40,
-    },
-    loginButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-    footerContainer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 60 },
-    footerText: { color: '#666', fontSize: 14 },
-    signUpLinkText: { color: '#00512c', fontSize: 14, fontWeight: 'bold', textDecorationLine: 'underline', paddingBottom: 5 },
-});
