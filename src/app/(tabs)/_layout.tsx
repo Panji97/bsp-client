@@ -38,13 +38,13 @@ export default function TabLayout() {
                 }}
             />
             <Tabs.Screen
-                name="transaction"
+                name="transactions"
                 options={{
                     tabBarActiveTintColor: '#00512c',
-                    title: 'Transaction',
+                    title: 'Transactions',
                     tabBarIcon: ({ color, focused }) => (
                         <Ionicons
-                            name={focused ? 'swap-horizontal' : 'swap-horizontal-outline'}
+                            name={focused ? 'home' : 'home-outline'}
                             size={24}
                             color={color}
                         />

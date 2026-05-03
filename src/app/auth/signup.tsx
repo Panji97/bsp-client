@@ -80,7 +80,7 @@ export default function WelcomeScreen() {
                                     />
                                 </TouchableOpacity>
                             </View>
-                            <View style={styles.passwordInputContainer}>
+                            <View style={styles.passwordInputContainer2}>
                                 <TextInput
                                     style={styles.passwordInput}
                                     placeholder="Enter your password"
@@ -189,12 +189,22 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         borderWidth: 1,
         borderColor: '#F0F0F0',
+        marginBottom: 10,
+    },
+    passwordInputContainer2: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F8F9FB',
+        borderRadius: 25,
+        paddingHorizontal: 20,
+        borderWidth: 1,
+        borderColor: '#F0F0F0',
     },
     passwordInput: { flex: 1, paddingVertical: 14, color: '#1A1A1A', fontSize: 14 },
     // forgotPasswordButton: { alignSelf: 'flex-end', marginBottom: 25 },
     // forgotPasswordText: { color: '#00512c', fontSize: 13, fontWeight: '600' },
     signupButton: {
-        backgroundColor: '#00512c',
+        backgroundColor: '#F68B1E',
         paddingVertical: 16,
         borderRadius: 25,
         alignItems: 'center',
