@@ -16,7 +16,7 @@ export default function SplashScreen() {
     }, []);
 
     return (
-        <View style={styles.overlay}>
+        <View className='flex-1 items-center justify center w-full h-full bg-red-500'>
             <View style={styles.headerRow}>
                 <Image
                     source={require('../../assets/images/icon_bspid.png')}
@@ -38,13 +38,13 @@ export default function SplashScreen() {
 }
 
 const styles = StyleSheet.create({
-    overlay: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: '100%',
-        height: '100%',
-    },
+    // overlay: {
+    //     flex: 1,
+    //     alignItems: 'center',
+    //     justifyContent: 'center',
+    //     width: '100%',
+    //     height: '100%',
+    // },
     headerRow: {
         flexDirection: 'row', // Ini kunci supaya menyamping
         alignItems: 'center', // Supaya logo dan teks sejajar secara vertikal
