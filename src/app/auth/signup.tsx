@@ -20,16 +20,36 @@ export default function WelcomeScreen() {
     return (
         <SafeAreaView style={styles.container}>
             <ImageBackground style={styles.background}>
-                <View style={styles.overlay}>
-                    <Image
-                        source={require('../../../assets/images/expo-logo.png')}
-                        style={styles.logo}
-                        resizeMode="contain"
-                    />
+                {/* Tombol Kembali - Pojok Kiri Atas */}
+                <TouchableOpacity
+                    style={styles.backButton}
+                    onPress={() => router.push('/')}
+                    activeOpacity={0.7}
+                >
+                    <MaterialIcons name="chevron-left" size={28} color="#2E7D32" />
+                </TouchableOpacity>
+
+                {/* Header Section */}
+                <View style={styles.headerContainer}>
+                    <View style={styles.headerRow}>
+                        <Image
+                            source={require('../../../assets/images/icon_bspid.png')}
+                            style={styles.logo}
+                            resizeMode="contain"
+                        />
+                        <View>
+                            <Text style={styles.title}>
+                                Sign Up
+                            </Text>
+                            <Text style={styles.subtitle}>
+                                Nasabah Bank Sampah Pintar
+                            </Text>
+                        </View>
+                    </View>
                 </View>
 
                 <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end' }} bounces={false}>
-                    <View style={{ height: height * 0.25 }} />
+                    <View style={{ height: height * 0.16 }} />
 
                     <View style={styles.signupPanel}>
                         <Text style={styles.panelTitle}>Welcome!</Text>
@@ -125,9 +145,50 @@ export default function WelcomeScreen() {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#000' },
-    background: { flex: 1, width: '100%', height: '100%', backgroundColor: '#000' },
+    background: { flex: 1, width: '100%', height: '100%', backgroundColor: '#F5F5DC' },
+    // Tombol Kembali - Bulat di pojok kiri atas
+    backButton: {
+        position: 'absolute',
+        top: 20,
+        left: 16,
+        zIndex: 10,
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: 'white',
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    headerContainer: {
+        alignItems: 'center',
+        paddingTop: 80,
+    },
+
+    headerRow: {
+        flexDirection: 'column',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+    },
+
+    title: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: 'black',
+        paddingBottom: 4,
+        paddingTop: 10,
+        textAlign: 'center',
+    },
+    subtitle: {
+        fontSize: 16,
+        color: '#555',
+    },
     overlay: { alignItems: 'center', justifyContent: 'center', paddingTop: 80 },
-    logo: { width: 120, height: 120 },
+    logo: { width: 120, height: 120, marginRight: 16 },
 
     signupPanel: {
         flex: 1,

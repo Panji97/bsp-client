@@ -1,5 +1,5 @@
 import { Stack } from 'expo-router';
-import "../../global.css"; // Pastikan ini diimpor untuk Nativewind
+
 
 export default function RootLayout() {
     return (
