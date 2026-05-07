@@ -26,7 +26,7 @@ export default function TabLayout() {
             <Tabs.Screen
                 name="home"
                 options={{
-                    tabBarActiveTintColor: '#00512c',
+                    tabBarActiveTintColor: '#2E7D32',
                     title: 'Home',
                     tabBarIcon: ({ color, focused }) => (
                         <Ionicons
@@ -40,11 +40,11 @@ export default function TabLayout() {
             <Tabs.Screen
                 name="transactions"
                 options={{
-                    tabBarActiveTintColor: '#00512c',
+                    tabBarActiveTintColor: '#2E7D32',
                     title: 'Transactions',
                     tabBarIcon: ({ color, focused }) => (
                         <Ionicons
-                            name={focused ? 'home' : 'home-outline'}
+                            name={focused ? 'list' : 'list-outline'}
                             size={24}
                             color={color}
                         />
@@ -54,7 +54,7 @@ export default function TabLayout() {
             <Tabs.Screen
                 name="profile"
                 options={{
-                    tabBarActiveTintColor: '#00512c',
+                    tabBarActiveTintColor: '#2E7D32',
                     title: 'Profile',
                     tabBarIcon: ({ color, focused }) => (
                         <Ionicons

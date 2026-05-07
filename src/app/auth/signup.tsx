@@ -9,6 +9,7 @@ export default function WelcomeScreen() {
     const router = useRouter();
     const [phoneNumber, setPhoneNumber] = useState<string>(''); // TypeScript Fix
     const [password, setPassword] = useState<string>(''); // TypeScript Fix
+    const [confirmPassword, setConfirmPassword] = useState<string>(''); // TypeScript Fix
     const [secureText, setSecureText] = useState<boolean>(true);
 
     // Fungsi dengan penanganan tipe data (TypeScript)
@@ -103,10 +104,10 @@ export default function WelcomeScreen() {
                             <View style={styles.passwordInputContainer2}>
                                 <TextInput
                                     style={styles.passwordInput}
-                                    placeholder="Enter your password"
+                                    placeholder="Confirm your password"
                                     placeholderTextColor="#A8ABB0"
-                                    value={password}
-                                    onChangeText={setPassword}
+                                    value={confirmPassword}
+                                    onChangeText={setConfirmPassword}
                                     secureTextEntry={secureText}
                                 />
                                 <TouchableOpacity onPress={() => setSecureText(!secureText)}>
