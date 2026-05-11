@@ -1,27 +1,124 @@
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Image, ImageBackground, StyleSheet, Text, TouchableOpacity, View, TextInput, ScrollView, Dimensions, SafeAreaView } from 'react-native';
+import { Image, ImageBackground, StyleSheet, Text, TouchableOpacity, View, TextInput, ScrollView, Dimensions, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { height } = Dimensions.get('window');
 
 export default function WelcomeScreen() {
     const router = useRouter();
-    const [phoneNumber, setPhoneNumber] = useState<string>(''); // TypeScript Fix
-    const [password, setPassword] = useState<string>(''); // TypeScript Fix
-    const [confirmPassword, setConfirmPassword] = useState<string>(''); // TypeScript Fix
+    const [phoneNumber, setPhoneNumber] = useState<string>('');
+    const [email, setEmail] = useState<string>('');
+    const [password, setPassword] = useState<string>('');
+    const [confirmPassword, setConfirmPassword] = useState<string>('');
     const [secureText, setSecureText] = useState<boolean>(true);
+    const [secureConfirmText, setSecureConfirmText] = useState<boolean>(true);
+    const [loading, setLoading] = useState<boolean>(false);
 
-    // Fungsi dengan penanganan tipe data (TypeScript)
     const handlePhoneChange = (text: string) => {
         const cleaned = text.replace(/[^0-9]/g, '');
-        setPhoneNumber(cleaned);
+        // Limit to max 13 digits
+        if (cleaned.length <= 13) {
+            setPhoneNumber(cleaned);
+        }
+    };
+
+    const validateInputs = () => {
+        // if (!phoneNumber || phoneNumber.length < 8) {
+        //     Alert.alert('Validation Error', 'Please enter a valid phone number (minimum 8 digits)');
+        //     return false;
+        // }
+
+        if (!password || password.length < 6) {
+            Alert.alert('Validation Error', 'Password must be at least 6 characters long');
+            return false;
+        }
+
+        if (password !== confirmPassword) {
+            Alert.alert('Validation Error', 'Passwords do not match');
+            return false;
+        }
+
+        return true;
+    };
+
+    const handleRegister = async () => {
+        if (!validateInputs()) {
+            return;
+        }
+
+        setLoading(true);
+
+        try {
+            // Format phone number with +62 prefix
+            const fullPhoneNumber = `${phoneNumber}`;
+
+            const response = await fetch('http://localhost:1337/api/auth/local/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username: fullPhoneNumber, // Using phone number as username
+                    email: email,
+                    password: password,
+                }),
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                console.log('Registration successful:', result);
+
+                // Save user data and token to AsyncStorage
+                if (result.jwt) {
+                    await AsyncStorage.setItem('userToken', result.jwt);
+                    await AsyncStorage.setItem('userData', JSON.stringify(result.user));
+                    console.log('Token and user data saved to AsyncStorage');
+
+                    Alert.alert(
+                        'Registration Successful',
+                        'Your account has been created successfully!',
+                        [
+                            {
+                                text: 'OK',
+                                onPress: () => router.replace('/(tabs)/home')
+                            }
+                        ]
+                    );
+                } else {
+                    Alert.alert('Error', 'Registration successful but no token received');
+                }
+            } else {
+                console.error('Registration failed:', result);
+
+                // Handle specific error messages from backend
+                let errorMessage = 'Registration failed. Please try again.';
+                if (result.error && result.error.message) {
+                    if (result.error.message.includes('unique')) {
+                        errorMessage = 'Phone number already registered. Please use a different number.';
+                    } else {
+                        errorMessage = result.error.message;
+                    }
+                }
+
+                Alert.alert('Registration Failed', errorMessage);
+            }
+        } catch (error) {
+            console.error('Network Error:', error);
+            Alert.alert(
+                'Connection Error',
+                'Unable to connect to server. Please check your internet connection and make sure the backend server is running.'
+            );
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
         <SafeAreaView style={styles.container}>
             <ImageBackground style={styles.background}>
-                {/* Tombol Kembali - Pojok Kiri Atas */}
                 <TouchableOpacity
                     style={styles.backButton}
                     onPress={() => router.push('/')}
@@ -30,7 +127,6 @@ export default function WelcomeScreen() {
                     <MaterialIcons name="chevron-left" size={28} color="#2E7D32" />
                 </TouchableOpacity>
 
-                {/* Header Section */}
                 <View style={styles.headerContainer}>
                     <View style={styles.headerRow}>
                         <Image
@@ -49,19 +145,21 @@ export default function WelcomeScreen() {
                     </View>
                 </View>
 
-                <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end' }} bounces={false}>
-                    <View style={{ height: height * 0.16 }} />
+                <ScrollView
+                    contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end' }}
+                    bounces={false}
+                    keyboardShouldPersistTaps="handled"
+                >
+                    <View style={{ height: height * 0.1 }} />
 
                     <View style={styles.signupPanel}>
                         <Text style={styles.panelTitle}>Welcome!</Text>
                         <Text style={styles.panelSubtitle}>Register your account using phone number</Text>
 
-                        {/* Input Nomor HP dengan Bendera Indonesia */}
                         <View style={styles.inputLabelContainer}>
                             <Text style={styles.inputLabel}>Phone Number</Text>
                             <View style={styles.phoneInputWrapper}>
                                 <View style={styles.countryCodeContainer}>
-                                    {/* Bendera Indonesia menggunakan Image */}
                                     <Image
                                         source={{ uri: 'https://flagcdn.com/w40/id.png' }}
                                         style={styles.flagIcon}
@@ -77,8 +175,24 @@ export default function WelcomeScreen() {
                                     onChangeText={handlePhoneChange}
                                     keyboardType="phone-pad"
                                     maxLength={13}
+                                    editable={!loading}
                                 />
                                 <MaterialIcons name="phone-iphone" size={20} color="#A8ABB0" />
+                            </View>
+                        </View>
+
+                        <View style={styles.inputLabelContainer}>
+                            <Text style={styles.inputLabel}>Email</Text>
+                            <View style={styles.passwordInputContainer}>
+                                <TextInput
+                                    style={styles.passwordInput}
+                                    placeholder="Enter your email"
+                                    placeholderTextColor="#A8ABB0"
+                                    value={email}
+                                    onChangeText={setEmail}
+                                    keyboardType="email-address"
+                                    editable={!loading}
+                                />
                             </View>
                         </View>
 
@@ -92,25 +206,9 @@ export default function WelcomeScreen() {
                                     value={password}
                                     onChangeText={setPassword}
                                     secureTextEntry={secureText}
+                                    editable={!loading}
                                 />
-                                <TouchableOpacity onPress={() => setSecureText(!secureText)}>
-                                    <MaterialIcons
-                                        name={secureText ? "visibility-off" : "visibility"}
-                                        size={20}
-                                        color="#A8ABB0"
-                                    />
-                                </TouchableOpacity>
-                            </View>
-                            <View style={styles.passwordInputContainer2}>
-                                <TextInput
-                                    style={styles.passwordInput}
-                                    placeholder="Confirm your password"
-                                    placeholderTextColor="#A8ABB0"
-                                    value={confirmPassword}
-                                    onChangeText={setConfirmPassword}
-                                    secureTextEntry={secureText}
-                                />
-                                <TouchableOpacity onPress={() => setSecureText(!secureText)}>
+                                <TouchableOpacity onPress={() => setSecureText(!secureText)} disabled={loading}>
                                     <MaterialIcons
                                         name={secureText ? "visibility-off" : "visibility"}
                                         size={20}
@@ -120,20 +218,43 @@ export default function WelcomeScreen() {
                             </View>
                         </View>
 
-                        {/* <TouchableOpacity style={styles.forgotPasswordButton}>
-                            <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-                        </TouchableOpacity> */}
+                        <View style={styles.inputLabelContainer}>
+                            <Text style={styles.inputLabel}>Confirm Password</Text>
+                            <View style={styles.passwordInputContainer2}>
+                                <TextInput
+                                    style={styles.passwordInput}
+                                    placeholder="Confirm your password"
+                                    placeholderTextColor="#A8ABB0"
+                                    value={confirmPassword}
+                                    onChangeText={setConfirmPassword}
+                                    secureTextEntry={secureConfirmText}
+                                    editable={!loading}
+                                />
+                                <TouchableOpacity onPress={() => setSecureConfirmText(!secureConfirmText)} disabled={loading}>
+                                    <MaterialIcons
+                                        name={secureConfirmText ? "visibility-off" : "visibility"}
+                                        size={20}
+                                        color="#A8ABB0"
+                                    />
+                                </TouchableOpacity>
+                            </View>
+                        </View>
 
                         <TouchableOpacity
-                            style={styles.signupButton}
-                            onPress={() => router.push('/(tabs)/home')}
+                            style={[styles.signupButton, loading && styles.signupButtonDisabled]}
+                            onPress={handleRegister}
+                            disabled={loading}
                         >
-                            <Text style={styles.signupButtonText}>Sign Up</Text>
+                            {loading ? (
+                                <ActivityIndicator color="#fff" />
+                            ) : (
+                                <Text style={styles.signupButtonText}>Sign Up</Text>
+                            )}
                         </TouchableOpacity>
 
                         <View style={styles.footerContainer}>
-                            <Text style={styles.footerText}>Don't have an account?</Text>
-                            <TouchableOpacity onPress={() => router.push('../auth/login')}>
+                            <Text style={styles.footerText}>Already have an account?</Text>
+                            <TouchableOpacity onPress={() => router.push('../auth/login')} disabled={loading}>
                                 <Text style={styles.signUpLinkText}> Log In</Text>
                             </TouchableOpacity>
                         </View>
@@ -147,7 +268,6 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#000' },
     background: { flex: 1, width: '100%', height: '100%', backgroundColor: '#F5F5DC' },
-    // Tombol Kembali - Bulat di pojok kiri atas
     backButton: {
         position: 'absolute',
         top: 20,
@@ -167,15 +287,13 @@ const styles = StyleSheet.create({
     },
     headerContainer: {
         alignItems: 'center',
-        paddingTop: 80,
+        paddingTop: 60,
     },
-
     headerRow: {
         flexDirection: 'column',
         alignItems: 'center',
         paddingHorizontal: 20,
     },
-
     title: {
         fontSize: 20,
         fontWeight: 'bold',
@@ -188,9 +306,7 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#555',
     },
-    overlay: { alignItems: 'center', justifyContent: 'center', paddingTop: 80 },
     logo: { width: 120, height: 120, marginRight: 16 },
-
     signupPanel: {
         flex: 1,
         backgroundColor: '#fff',
@@ -204,8 +320,6 @@ const styles = StyleSheet.create({
     panelSubtitle: { fontSize: 14, color: '#666', marginBottom: 30 },
     inputLabelContainer: { marginBottom: 20 },
     inputLabel: { fontSize: 14, fontWeight: '600', color: '#1A1A1A', marginBottom: 8, marginLeft: 5 },
-
-    // Style Input Phone & Bendera
     phoneInputWrapper: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -242,7 +356,6 @@ const styles = StyleSheet.create({
         fontSize: 15,
         color: '#1A1A1A',
     },
-
     passwordInputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -251,7 +364,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         borderWidth: 1,
         borderColor: '#F0F0F0',
-        marginBottom: 10,
+        marginBottom: 0,
     },
     passwordInputContainer2: {
         flexDirection: 'row',
@@ -263,8 +376,6 @@ const styles = StyleSheet.create({
         borderColor: '#F0F0F0',
     },
     passwordInput: { flex: 1, paddingVertical: 14, color: '#1A1A1A', fontSize: 14 },
-    // forgotPasswordButton: { alignSelf: 'flex-end', marginBottom: 25 },
-    // forgotPasswordText: { color: '#00512c', fontSize: 13, fontWeight: '600' },
     signupButton: {
         backgroundColor: '#F68B1E',
         paddingVertical: 16,
@@ -272,6 +383,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: 20,
         marginTop: 10,
+    },
+    signupButtonDisabled: {
+        backgroundColor: '#F68B1E80',
+        opacity: 0.7,
     },
     signupButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
     footerContainer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
