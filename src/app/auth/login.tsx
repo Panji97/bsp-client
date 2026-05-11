@@ -16,6 +16,34 @@ export default function WelcomeScreen() {
         setPhoneNumber(cleaned);
     };
 
+    const handleLogin = async () => {
+        try {
+            const response = await fetch('http://localhost:1337/api/auth/local', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }, body: JSON.stringify({
+                    identifier: phoneNumber,
+                    password: password,
+                }),
+            })
+
+            const result = await response.json();
+
+            if (response.ok) {
+                console.log('Login successful:', result);
+                //1. Simpan token ke AsyncStorage atau Context
+                //2. Navigasi ke halaman utama
+                router.push('/(tabs)/home');
+            } else {
+                console.error('Login failed:', result);
+            }
+
+        } catch (error) {
+            throw error;
+        }
+    }
+
     return (
         <SafeAreaView style={styles.safeArea}>
             <ImageBackground style={styles.background}>
@@ -114,7 +142,7 @@ export default function WelcomeScreen() {
                         {/* Login Button */}
                         <TouchableOpacity
                             style={styles.loginButton}
-                            onPress={() => router.push('/(tabs)/home')}
+                            onPress={handleLogin}
                         >
                             <Text style={styles.loginButtonText}>Log In</Text>
                         </TouchableOpacity>
