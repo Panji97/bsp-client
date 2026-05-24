@@ -2,12 +2,13 @@ import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Image, ImageBackground, StyleSheet, Text, TouchableOpacity, View, TextInput, ScrollView, Dimensions, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth } from '../../context/authContext'; // Tambahkan ini
 
 const { height } = Dimensions.get('window');
 
 export default function WelcomeScreen() {
     const router = useRouter();
+    const { setAuthData } = useAuth(); // Tambahkan ini
     const [phoneNumber, setPhoneNumber] = useState<string>('');
     const [email, setEmail] = useState<string>('');
     const [password, setPassword] = useState<string>('');
@@ -18,17 +19,22 @@ export default function WelcomeScreen() {
 
     const handlePhoneChange = (text: string) => {
         const cleaned = text.replace(/[^0-9]/g, '');
-        // Limit to max 13 digits
         if (cleaned.length <= 13) {
             setPhoneNumber(cleaned);
         }
     };
 
     const validateInputs = () => {
-        // if (!phoneNumber || phoneNumber.length < 8) {
-        //     Alert.alert('Validation Error', 'Please enter a valid phone number (minimum 8 digits)');
-        //     return false;
-        // }
+        if (!email) {
+            Alert.alert('Validation Error', 'Please enter your email');
+            return false;
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            Alert.alert('Validation Error', 'Please enter a valid email address');
+            return false;
+        }
 
         if (!password || password.length < 6) {
             Alert.alert('Validation Error', 'Password must be at least 6 characters long');
@@ -51,8 +57,7 @@ export default function WelcomeScreen() {
         setLoading(true);
 
         try {
-            // Format phone number with +62 prefix
-            const fullPhoneNumber = `${phoneNumber}`;
+            const fullPhoneNumber = phoneNumber;
 
             const response = await fetch('http://localhost:1337/api/auth/local/register', {
                 method: 'POST',
@@ -60,7 +65,7 @@ export default function WelcomeScreen() {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    username: fullPhoneNumber, // Using phone number as username
+                    username: fullPhoneNumber,
                     email: email,
                     password: password,
                 }),
@@ -71,33 +76,20 @@ export default function WelcomeScreen() {
             if (response.ok) {
                 console.log('Registration successful:', result);
 
-                // Save user data and token to AsyncStorage
                 if (result.jwt) {
-                    await AsyncStorage.setItem('userToken', result.jwt);
-                    await AsyncStorage.setItem('userData', JSON.stringify(result.user));
-                    console.log('Token and user data saved to AsyncStorage');
-
-                    Alert.alert(
-                        'Registration Successful',
-                        'Your account has been created successfully!',
-                        [
-                            {
-                                text: 'OK',
-                                onPress: () => router.replace('/(tabs)/home')
-                            }
-                        ]
-                    );
+                    // Gunakan setAuthData dari context
+                    await setAuthData(result.jwt, result.user);
+                    router.push('/(tabs)/home');
                 } else {
                     Alert.alert('Error', 'Registration successful but no token received');
                 }
             } else {
                 console.error('Registration failed:', result);
 
-                // Handle specific error messages from backend
                 let errorMessage = 'Registration failed. Please try again.';
                 if (result.error && result.error.message) {
                     if (result.error.message.includes('unique')) {
-                        errorMessage = 'Phone number already registered. Please use a different number.';
+                        errorMessage = 'Phone number or email already registered. Please use a different one.';
                     } else {
                         errorMessage = result.error.message;
                     }
@@ -266,6 +258,7 @@ export default function WelcomeScreen() {
 }
 
 const styles = StyleSheet.create({
+
     container: { flex: 1, backgroundColor: '#000' },
     background: { flex: 1, width: '100%', height: '100%', backgroundColor: '#F5F5DC' },
     backButton: {
