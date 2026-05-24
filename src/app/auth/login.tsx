@@ -1,15 +1,18 @@
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Image, ImageBackground, Text, TouchableOpacity, View, TextInput, ScrollView, Dimensions, SafeAreaView, StyleSheet } from 'react-native';
+import { Image, ImageBackground, Text, TouchableOpacity, View, TextInput, ScrollView, Dimensions, SafeAreaView, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useAuth } from '../../context/authContext'; // Tambahkan ini
 
 const { height } = Dimensions.get('window');
 
 export default function WelcomeScreen() {
     const router = useRouter();
+    const { login, isLoading: authLoading } = useAuth(); // Tambahkan ini
     const [phoneNumber, setPhoneNumber] = useState<string>('');
     const [password, setPassword] = useState<string>('');
     const [secureText, setSecureText] = useState<boolean>(true);
+    const [loading, setLoading] = useState<boolean>(false); // Local loading state
 
     const handlePhoneChange = (text: string) => {
         const cleaned = text.replace(/[^0-9]/g, '');
@@ -17,41 +20,36 @@ export default function WelcomeScreen() {
     };
 
     const handleLogin = async () => {
+        if (!phoneNumber || !password) {
+            Alert.alert('Error', 'Please fill all fields');
+            return;
+        }
+
+        setLoading(true);
         try {
-            const response = await fetch('http://localhost:1337/api/auth/local', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                }, body: JSON.stringify({
-                    identifier: phoneNumber,
-                    password: password,
-                }),
-            })
+            // Format phone number with +62 prefix if needed
+            const identifier = phoneNumber.startsWith('0')
+                ? `62${phoneNumber.substring(1)}`
+                : phoneNumber;
 
-            const result = await response.json();
-
-            if (response.ok) {
-                console.log('Login successful:', result);
-                //1. Simpan token ke AsyncStorage atau Context
-                //2. Navigasi ke halaman utama
-                router.push('/(tabs)/home');
-            } else {
-                console.error('Login failed:', result);
-            }
-
-        } catch (error) {
-            throw error;
+            await login(identifier, password);
+            // Router akan otomatis dihandle oleh useProtectedRoute
+        } catch (error: any) {
+            Alert.alert('Login Failed', error.message || 'Invalid phone number or password');
+        } finally {
+            setLoading(false);
         }
     }
 
     return (
         <SafeAreaView style={styles.safeArea}>
             <ImageBackground style={styles.background}>
-                {/* Tombol Kembali - Pojok Kiri Atas */}
+                {/* Tombol Kembali */}
                 <TouchableOpacity
                     style={styles.backButton}
                     onPress={() => router.push('/')}
                     activeOpacity={0.7}
+                    disabled={loading || authLoading}
                 >
                     <MaterialIcons name="chevron-left" size={28} color="#2E7D32" />
                 </TouchableOpacity>
@@ -78,11 +76,10 @@ export default function WelcomeScreen() {
                 <ScrollView
                     contentContainerStyle={styles.scrollContent}
                     bounces={false}
+                    keyboardShouldPersistTaps="handled"
                 >
-                    {/* Spacer to push content down */}
                     <View style={{ height: height * 0.18 }} />
 
-                    {/* Login Panel */}
                     <View style={styles.loginPanel}>
                         <Text style={styles.welcomeTitle}>Welcome!</Text>
                         <Text style={styles.welcomeSubtitle}>Log In to your account using phone number</Text>
@@ -107,6 +104,7 @@ export default function WelcomeScreen() {
                                     onChangeText={handlePhoneChange}
                                     keyboardType="phone-pad"
                                     maxLength={13}
+                                    editable={!loading && !authLoading}
                                 />
                                 <MaterialIcons name="phone-iphone" size={20} color="#A8ABB0" />
                             </View>
@@ -123,8 +121,9 @@ export default function WelcomeScreen() {
                                     value={password}
                                     onChangeText={setPassword}
                                     secureTextEntry={secureText}
+                                    editable={!loading && !authLoading}
                                 />
-                                <TouchableOpacity onPress={() => setSecureText(!secureText)}>
+                                <TouchableOpacity onPress={() => setSecureText(!secureText)} disabled={loading || authLoading}>
                                     <MaterialIcons
                                         name={secureText ? "visibility-off" : "visibility"}
                                         size={20}
@@ -135,22 +134,27 @@ export default function WelcomeScreen() {
                         </View>
 
                         {/* Forgot Password */}
-                        <TouchableOpacity style={styles.forgotPasswordContainer}>
+                        <TouchableOpacity style={styles.forgotPasswordContainer} disabled={loading || authLoading}>
                             <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
                         </TouchableOpacity>
 
                         {/* Login Button */}
                         <TouchableOpacity
-                            style={styles.loginButton}
+                            style={[styles.loginButton, (loading || authLoading) && styles.disabledButton]}
                             onPress={handleLogin}
+                            disabled={loading || authLoading}
                         >
-                            <Text style={styles.loginButtonText}>Log In</Text>
+                            {(loading || authLoading) ? (
+                                <ActivityIndicator color="#fff" />
+                            ) : (
+                                <Text style={styles.loginButtonText}>Log In</Text>
+                            )}
                         </TouchableOpacity>
 
                         {/* Footer */}
                         <View style={styles.footer}>
                             <Text style={styles.footerText}>Don't have an account?</Text>
-                            <TouchableOpacity onPress={() => router.push('../auth/signup')}>
+                            <TouchableOpacity onPress={() => router.push('../auth/signup')} disabled={loading || authLoading}>
                                 <Text style={styles.signupText}> Sign Up</Text>
                             </TouchableOpacity>
                         </View>
@@ -162,6 +166,10 @@ export default function WelcomeScreen() {
 }
 
 const styles = StyleSheet.create({
+    // ... style yang sudah ada, tambahkan:
+    disabledButton: {
+        opacity: 0.7,
+    },
     safeArea: {
         flex: 1,
     },

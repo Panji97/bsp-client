@@ -1,15 +1,15 @@
 import { Stack } from 'expo-router';
-
+import { AuthProvider } from '../context/authContext';
+import { StatusBar } from 'expo-status-bar';
 
 export default function RootLayout() {
     return (
-        <Stack screenOptions={{ headerShown: false }}>
-            {/* Halaman Welcome/Login menjadi index */}
-            <Stack.Screen name="auth/login" />
-            {/* Halaman Sign Up */}
-            <Stack.Screen name="auth/signup" />
-            {/* Navigasi utama setelah login */}
-            {/* <Stack.Screen name="(tabs)" options={{ headerShown: false }} /> */}
-        </Stack>
+        <AuthProvider>
+            <StatusBar style="auto" />
+            <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="auth" />
+                <Stack.Screen name="(tabs)" />
+            </Stack>
+        </AuthProvider>
     );
 }
