@@ -1,6 +1,7 @@
-import { View, Text, Dimensions, FlatList, TouchableOpacity, Image, StyleSheet } from 'react-native';
+import { View, Text, Dimensions, FlatList, TouchableOpacity, Image, StyleSheet, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState } from 'react';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const { width } = Dimensions.get('window');
 
@@ -16,6 +17,7 @@ interface Transaction {
 
 export default function TransactionsScreen() {
     const [activeFilter, setActiveFilter] = useState<'all' | 'in' | 'out'>('all');
+    const [selectedTransaction, setSelectedTransaction] = useState<string | null>(null);
 
     const transactions: Transaction[] = [
         {
@@ -90,7 +92,14 @@ export default function TransactionsScreen() {
     };
 
     const TransactionCard = ({ item }: { item: Transaction }) => (
-        <TouchableOpacity style={styles.transactionCard}>
+        <TouchableOpacity
+            style={[
+                styles.transactionCard,
+                selectedTransaction === item.id && styles.transactionCardActive
+            ]}
+            onPress={() => setSelectedTransaction(item.id === selectedTransaction ? null : item.id)}
+            activeOpacity={0.7}
+        >
             <View style={[styles.iconContainer, item.type === 'in' ? styles.incomeIcon : styles.expenseIcon]}>
                 <Text style={styles.iconText}>{item.icon}</Text>
             </View>
@@ -104,7 +113,9 @@ export default function TransactionsScreen() {
                 </View>
 
                 <View style={styles.transactionFooter}>
-                    <Text style={styles.categoryText}>{item.category}</Text>
+                    <View style={styles.categoryBadge}>
+                        <Text style={styles.categoryText}>{item.category}</Text>
+                    </View>
                     <Text style={styles.dateText}>{item.date}</Text>
                 </View>
             </View>
@@ -115,6 +126,7 @@ export default function TransactionsScreen() {
         <TouchableOpacity
             onPress={() => setActiveFilter(value)}
             style={[styles.filterButton, activeFilter === value && styles.activeFilterButton]}
+            activeOpacity={0.8}
         >
             <Text style={[styles.filterButtonText, activeFilter === value && styles.activeFilterButtonText]}>
                 {label}
@@ -134,7 +146,12 @@ export default function TransactionsScreen() {
         const balance = totalIncome - totalExpense;
 
         return (
-            <View style={styles.summaryCard}>
+            <LinearGradient
+                colors={['#FF6B35', '#FF8C42', '#FFA75E']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.summaryCard}
+            >
                 <Text style={styles.balanceLabel}>Total Balance</Text>
                 <Text style={styles.balanceAmount}>
                     Rp{new Intl.NumberFormat('id-ID').format(balance)}
@@ -143,32 +160,50 @@ export default function TransactionsScreen() {
                 <View style={styles.summaryDivider} />
 
                 <View style={styles.summaryStats}>
-                    <View>
-                        <Text style={styles.statsLabel}>Income</Text>
-                        <Text style={styles.statsValue}>
-                            +Rp{new Intl.NumberFormat('id-ID').format(totalIncome)}
-                        </Text>
+                    <View style={styles.statsItem}>
+                        <View style={styles.statsIconContainer}>
+                            <Text style={styles.statsIcon}>📈</Text>
+                        </View>
+                        <View>
+                            <Text style={styles.statsLabel}>Income</Text>
+                            <Text style={styles.statsValue}>
+                                +Rp{new Intl.NumberFormat('id-ID').format(totalIncome)}
+                            </Text>
+                        </View>
                     </View>
 
                     <View style={styles.verticalDivider} />
 
-                    <View>
-                        <Text style={styles.statsLabel}>Expense</Text>
-                        <Text style={styles.statsValue}>
-                            -Rp{new Intl.NumberFormat('id-ID').format(totalExpense)}
-                        </Text>
+                    <View style={styles.statsItem}>
+                        <View style={[styles.statsIconContainer, styles.statsIconExpense]}>
+                            <Text style={styles.statsIcon}>📉</Text>
+                        </View>
+                        <View>
+                            <Text style={styles.statsLabel}>Expense</Text>
+                            <Text style={styles.statsValue}>
+                                -Rp{new Intl.NumberFormat('id-ID').format(totalExpense)}
+                            </Text>
+                        </View>
                     </View>
                 </View>
-            </View>
+            </LinearGradient>
         );
     };
 
     return (
         <SafeAreaView style={styles.container}>
+            <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
             <View style={styles.content}>
                 {/* Header */}
                 <View style={styles.header}>
-                    <Text style={styles.headerTitle}>Transactions</Text>
+                    <View>
+                        <Text style={styles.headerTitle}>Transactions</Text>
+                    </View>
+                    <TouchableOpacity style={styles.profileButton}>
+                        <View style={styles.profileCircle}>
+                            <Text style={styles.profileText}>JD</Text>
+                        </View>
+                    </TouchableOpacity>
                 </View>
 
                 {/* Summary Card */}
@@ -176,7 +211,10 @@ export default function TransactionsScreen() {
 
                 {/* Filter Section */}
                 <View style={styles.filterSection}>
-                    <Text style={styles.filterLabel}>Filter by</Text>
+                    <View style={styles.filterHeader}>
+                        <Text style={styles.filterLabel}>Recent Transactions</Text>
+                        <Text style={styles.filterCount}>{filteredTransactions.length} items</Text>
+                    </View>
                     <View style={styles.filterContainer}>
                         <FilterButton label="All" value="all" />
                         <FilterButton label="Income" value="in" />
@@ -193,124 +231,194 @@ export default function TransactionsScreen() {
                     contentContainerStyle={styles.transactionList}
                     ListEmptyComponent={() => (
                         <View style={styles.emptyContainer}>
+                            <Text style={styles.emptyEmoji}>🔍</Text>
                             <Text style={styles.emptyText}>No transactions found</Text>
+                            <Text style={styles.emptySubtext}>Try adjusting your filters</Text>
                         </View>
                     )}
                 />
 
                 {/* Floating Action Button */}
-                <TouchableOpacity style={styles.fab}>
-                    <Text style={styles.fabText}>+</Text>
+                <TouchableOpacity style={styles.fab} activeOpacity={0.8}>
+                    <LinearGradient
+                        colors={['#FF6B35', '#FF8C42']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles.fabGradient}
+                    >
+                        <Text style={styles.fabText}>+</Text>
+                    </LinearGradient>
                 </TouchableOpacity>
             </View>
         </SafeAreaView>
     );
 }
 
-// ============ NATIVE CSS (STYLESHEET) ============
-
 const styles = StyleSheet.create({
-    // Main Container
     container: {
         flex: 1,
-        backgroundColor: '#F8F9FA',
+        backgroundColor: '#F5F5F5',
     },
     content: {
         flex: 1,
+        backgroundColor: '#F5F5F5',
     },
 
     // Header Styles
     header: {
-        paddingHorizontal: 16,
-        paddingTop: 16,
-        paddingBottom: 8,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingTop: 12,
+        paddingBottom: 16,
         backgroundColor: '#FFFFFF',
         borderBottomWidth: 1,
         borderBottomColor: '#F0F0F0',
+    },
+    headerSubtitle: {
+        fontSize: 12,
+        color: '#999999',
+        marginBottom: 2,
+        fontWeight: '500',
     },
     headerTitle: {
         fontSize: 28,
         fontWeight: 'bold',
         color: '#1A1A1A',
     },
+    profileButton: {
+        padding: 4,
+    },
+    profileCircle: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: '#FF6B35',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: '#FFD4B8',
+    },
+    profileText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
 
     // Summary Card Styles
     summaryCard: {
-        backgroundColor: '#0057FF',
         margin: 16,
-        padding: 20,
-        borderRadius: 16,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 3,
+        padding: 24,
+        borderRadius: 20,
+        shadowColor: '#FF6B35',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 12,
+        elevation: 6,
     },
     balanceLabel: {
         color: '#FFFFFF',
         fontSize: 14,
-        opacity: 0.8,
-        marginBottom: 8,
+        opacity: 0.9,
+        marginBottom: 4,
+        fontWeight: '500',
     },
     balanceAmount: {
         color: '#FFFFFF',
-        fontSize: 32,
+        fontSize: 34,
         fontWeight: 'bold',
-        marginBottom: 16,
+        marginBottom: 20,
     },
     summaryDivider: {
         height: 1,
         backgroundColor: '#FFFFFF',
-        opacity: 0.3,
-        marginBottom: 16,
+        opacity: 0.2,
+        marginBottom: 20,
     },
     summaryStats: {
         flexDirection: 'row',
         justifyContent: 'space-between',
     },
+    statsItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+    },
+    statsIconContainer: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 10,
+    },
+    statsIconExpense: {
+        backgroundColor: 'rgba(255,255,255,0.15)',
+    },
+    statsIcon: {
+        fontSize: 16,
+    },
     statsLabel: {
         color: '#FFFFFF',
-        fontSize: 12,
+        fontSize: 11,
         opacity: 0.8,
-        marginBottom: 4,
+        marginBottom: 2,
     },
     statsValue: {
         color: '#FFFFFF',
-        fontSize: 16,
+        fontSize: 14,
         fontWeight: '600',
     },
     verticalDivider: {
         width: 1,
-        backgroundColor: '#FFFFFF',
-        opacity: 0.3,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        marginHorizontal: 16,
     },
 
     // Filter Section Styles
     filterSection: {
-        paddingHorizontal: 16,
-        paddingVertical: 12,
+        paddingHorizontal: 20,
+        paddingVertical: 16,
         backgroundColor: '#FFFFFF',
         borderBottomWidth: 1,
         borderBottomColor: '#F0F0F0',
     },
-    filterLabel: {
-        fontSize: 14,
-        fontWeight: '500',
-        color: '#666666',
+    filterHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
         marginBottom: 12,
+    },
+    filterLabel: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#1A1A1A',
+    },
+    filterCount: {
+        fontSize: 12,
+        color: '#999999',
+        fontWeight: '500',
     },
     filterContainer: {
         flexDirection: 'row',
+        gap: 8,
     },
     filterButton: {
         paddingHorizontal: 20,
-        paddingVertical: 8,
-        borderRadius: 20,
+        paddingVertical: 10,
+        borderRadius: 25,
         backgroundColor: '#F5F5F5',
-        marginRight: 10,
+        marginRight: 8,
     },
     activeFilterButton: {
-        backgroundColor: '#0057FF',
+        backgroundColor: '#FF6B35',
+        shadowColor: '#FF6B35',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 3,
     },
     filterButtonText: {
         fontSize: 14,
@@ -323,16 +431,33 @@ const styles = StyleSheet.create({
 
     // Transaction List Styles
     transactionList: {
-        backgroundColor: '#FFFFFF',
+        paddingBottom: 80,
+        backgroundColor: '#F5F5F5',
     },
     transactionCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 16,
+        paddingVertical: 14,
         paddingHorizontal: 16,
         backgroundColor: '#FFFFFF',
-        borderBottomWidth: 1,
-        borderBottomColor: '#F0F0F0',
+        marginHorizontal: 16,
+        marginVertical: 4,
+        borderRadius: 14,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 3,
+        elevation: 2,
+        borderWidth: 1,
+        borderColor: 'transparent',
+    },
+    transactionCardActive: {
+        borderColor: '#FF6B35',
+        shadowColor: '#FF6B35',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 6,
+        elevation: 4,
     },
     iconContainer: {
         width: 48,
@@ -340,16 +465,16 @@ const styles = StyleSheet.create({
         borderRadius: 24,
         justifyContent: 'center',
         alignItems: 'center',
-        marginRight: 12,
+        marginRight: 14,
     },
     incomeIcon: {
         backgroundColor: '#E8F5E9',
     },
     expenseIcon: {
-        backgroundColor: '#FFEBEE',
+        backgroundColor: '#FFF3F0',
     },
     iconText: {
-        fontSize: 24,
+        fontSize: 22,
     },
     transactionDetails: {
         flex: 1,
@@ -361,64 +486,90 @@ const styles = StyleSheet.create({
         marginBottom: 4,
     },
     transactionTitle: {
-        fontSize: 16,
+        fontSize: 15,
         fontWeight: '600',
         color: '#1A1A1A',
+        flex: 1,
+        marginRight: 8,
     },
     transactionAmount: {
-        fontSize: 16,
-        fontWeight: '600',
+        fontSize: 15,
+        fontWeight: 'bold',
     },
     incomeText: {
         color: '#4CAF50',
     },
     expenseText: {
-        color: '#F44336',
+        color: '#FF6B35',
     },
     transactionFooter: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
     },
+    categoryBadge: {
+        backgroundColor: '#FFF3F0',
+        paddingHorizontal: 10,
+        paddingVertical: 2,
+        borderRadius: 12,
+    },
     categoryText: {
-        fontSize: 12,
-        color: '#8E8E93',
+        fontSize: 11,
+        color: '#FF6B35',
+        fontWeight: '500',
     },
     dateText: {
-        fontSize: 12,
-        color: '#8E8E93',
+        fontSize: 11,
+        color: '#999999',
     },
 
     // Empty State Styles
     emptyContainer: {
-        padding: 32,
+        padding: 40,
         alignItems: 'center',
+        backgroundColor: '#FFFFFF',
+        marginHorizontal: 16,
+        marginTop: 20,
+        borderRadius: 16,
+    },
+    emptyEmoji: {
+        fontSize: 48,
+        marginBottom: 12,
     },
     emptyText: {
         fontSize: 16,
+        color: '#666666',
+        fontWeight: '600',
+        marginBottom: 4,
+    },
+    emptySubtext: {
+        fontSize: 14,
         color: '#999999',
     },
 
     // Floating Action Button Styles
     fab: {
         position: 'absolute',
-        bottom: 20,
-        right: 20,
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        backgroundColor: '#0057FF',
+        bottom: 24,
+        right: 24,
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        shadowColor: '#FF6B35',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 6,
+    },
+    fabGradient: {
+        flex: 1,
+        borderRadius: 30,
         justifyContent: 'center',
         alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-        elevation: 5,
     },
     fabText: {
-        fontSize: 24,
+        fontSize: 28,
         color: '#FFFFFF',
-        fontWeight: 'bold',
+        fontWeight: '300',
     },
 });

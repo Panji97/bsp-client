@@ -1,18 +1,18 @@
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Image, ImageBackground, Text, TouchableOpacity, View, TextInput, ScrollView, Dimensions, SafeAreaView, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { Image, ImageBackground, Text, TouchableOpacity, View, TextInput, Dimensions, SafeAreaView, StyleSheet, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useAuth } from '../../context/authContext'; // Tambahkan ini
+import { useAuth } from '../../context/authContext';
 
-const { height } = Dimensions.get('window');
+const { height, width } = Dimensions.get('window');
 
 export default function WelcomeScreen() {
     const router = useRouter();
-    const { login, isLoading: authLoading } = useAuth(); // Tambahkan ini
+    const { login, isLoading: authLoading } = useAuth();
     const [phoneNumber, setPhoneNumber] = useState<string>('');
     const [password, setPassword] = useState<string>('');
     const [secureText, setSecureText] = useState<boolean>(true);
-    const [loading, setLoading] = useState<boolean>(false); // Local loading state
+    const [loading, setLoading] = useState<boolean>(false);
 
     const handlePhoneChange = (text: string) => {
         const cleaned = text.replace(/[^0-9]/g, '');
@@ -27,13 +27,11 @@ export default function WelcomeScreen() {
 
         setLoading(true);
         try {
-            // Format phone number with +62 prefix if needed
             const identifier = phoneNumber.startsWith('0')
                 ? `62${phoneNumber.substring(1)}`
                 : phoneNumber;
 
             await login(identifier, password);
-            // Router akan otomatis dihandle oleh useProtectedRoute
         } catch (error: any) {
             Alert.alert('Login Failed', error.message || 'Invalid phone number or password');
         } finally {
@@ -43,43 +41,41 @@ export default function WelcomeScreen() {
 
     return (
         <SafeAreaView style={styles.safeArea}>
-            <ImageBackground style={styles.background}>
-                {/* Tombol Kembali */}
-                <TouchableOpacity
-                    style={styles.backButton}
-                    onPress={() => router.push('/')}
-                    activeOpacity={0.7}
-                    disabled={loading || authLoading}
-                >
-                    <MaterialIcons name="chevron-left" size={28} color="#2E7D32" />
-                </TouchableOpacity>
+            <KeyboardAvoidingView
+                style={styles.keyboardAvoidingView}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            >
+                <ImageBackground style={styles.background}>
+                    {/* Tombol Kembali */}
+                    <TouchableOpacity
+                        style={styles.backButton}
+                        onPress={() => router.push('/')}
+                        activeOpacity={0.7}
+                        disabled={loading || authLoading}
+                    >
+                        <MaterialIcons name="chevron-left" size={28} color="#2E7D32" />
+                    </TouchableOpacity>
 
-                {/* Header Section */}
-                <View style={styles.headerContainer}>
-                    <View style={styles.headerRow}>
-                        <Image
-                            source={require('../../../assets/images/icon_bspid.png')}
-                            style={styles.logo}
-                            resizeMode="contain"
-                        />
-                        <View>
-                            <Text style={styles.title}>
-                                Log In
-                            </Text>
-                            <Text style={styles.subtitle}>
-                                Nasabah Bank Sampah Pintar
-                            </Text>
+                    {/* Header Section */}
+                    <View style={styles.headerContainer}>
+                        <View style={styles.headerRow}>
+                            <Image
+                                source={require('../../../assets/images/icon_bspid.png')}
+                                style={styles.logo}
+                                resizeMode="contain"
+                            />
+                            <View>
+                                <Text style={styles.title}>
+                                    Log In
+                                </Text>
+                                <Text style={styles.subtitle}>
+                                    Nasabah Bank Sampah Pintar
+                                </Text>
+                            </View>
                         </View>
                     </View>
-                </View>
 
-                <ScrollView
-                    contentContainerStyle={styles.scrollContent}
-                    bounces={false}
-                    keyboardShouldPersistTaps="handled"
-                >
-                    <View style={{ height: height * 0.18 }} />
-
+                    {/* Login Panel - Langsung ditampilkan penuh */}
                     <View style={styles.loginPanel}>
                         <Text style={styles.welcomeTitle}>Welcome!</Text>
                         <Text style={styles.welcomeSubtitle}>Log In to your account using phone number</Text>
@@ -159,25 +155,28 @@ export default function WelcomeScreen() {
                             </TouchableOpacity>
                         </View>
                     </View>
-                </ScrollView>
-            </ImageBackground>
+                </ImageBackground>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
-    // ... style yang sudah ada, tambahkan:
-    disabledButton: {
-        opacity: 0.7,
-    },
     safeArea: {
         flex: 1,
+        backgroundColor: '#F5F5DC',
+    },
+    keyboardAvoidingView: {
+        flex: 1,
+    },
+    disabledButton: {
+        opacity: 0.7,
     },
     background: {
         flex: 1,
         width: '100%',
         height: '100%',
-        backgroundColor: '#F5F5DC',
+        backgroundColor: '#EDEDF5',
     },
     // Tombol Kembali - Bulat di pojok kiri atas
     backButton: {
@@ -199,7 +198,8 @@ const styles = StyleSheet.create({
     },
     headerContainer: {
         alignItems: 'center',
-        paddingTop: 80,
+        paddingTop: 60,
+        paddingBottom: 20,
     },
     headerRow: {
         flexDirection: 'column',
@@ -207,9 +207,9 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
     },
     logo: {
-        width: 120,
-        height: 120,
-        marginRight: 16,
+        width: 100,
+        height: 100,
+        marginBottom: 8,
     },
     title: {
         fontSize: 20,
@@ -220,20 +220,20 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     subtitle: {
-        fontSize: 16,
+        fontSize: 14,
         color: '#555',
-    },
-    scrollContent: {
-        flexGrow: 1,
-        justifyContent: 'flex-end',
+        textAlign: 'center',
     },
     loginPanel: {
+        flex: 1,
         backgroundColor: 'white',
         borderTopLeftRadius: 35,
         borderTopRightRadius: 35,
         paddingHorizontal: 24,
         paddingTop: 32,
         paddingBottom: 40,
+        marginTop: 20,
+        justifyContent: 'space-between',
     },
     welcomeTitle: {
         fontSize: 30,
