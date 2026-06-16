@@ -1,20 +1,18 @@
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Image, ImageBackground, StyleSheet, Text, TouchableOpacity, View, TextInput, ScrollView, Dimensions, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
+import { Image, ImageBackground, StyleSheet, Text, TouchableOpacity, View, TextInput, Dimensions, SafeAreaView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useAuth } from '../../context/authContext'; // Tambahkan ini
+import { useAuth } from '../../context/authContext';
 
 const { height } = Dimensions.get('window');
 
 export default function WelcomeScreen() {
     const router = useRouter();
-    const { setAuthData } = useAuth(); // Tambahkan ini
+    const { setAuthData } = useAuth();
     const [phoneNumber, setPhoneNumber] = useState<string>('');
     const [email, setEmail] = useState<string>('');
     const [password, setPassword] = useState<string>('');
-    const [confirmPassword, setConfirmPassword] = useState<string>('');
     const [secureText, setSecureText] = useState<boolean>(true);
-    const [secureConfirmText, setSecureConfirmText] = useState<boolean>(true);
     const [loading, setLoading] = useState<boolean>(false);
 
     const handlePhoneChange = (text: string) => {
@@ -38,11 +36,6 @@ export default function WelcomeScreen() {
 
         if (!password || password.length < 6) {
             Alert.alert('Validation Error', 'Password must be at least 6 characters long');
-            return false;
-        }
-
-        if (password !== confirmPassword) {
-            Alert.alert('Validation Error', 'Passwords do not match');
             return false;
         }
 
@@ -77,7 +70,6 @@ export default function WelcomeScreen() {
                 console.log('Registration successful:', result);
 
                 if (result.jwt) {
-                    // Gunakan setAuthData dari context
                     await setAuthData(result.jwt, result.user);
                     router.push('/(tabs)/home');
                 } else {
@@ -110,40 +102,38 @@ export default function WelcomeScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
-            <ImageBackground style={styles.background}>
-                <TouchableOpacity
-                    style={styles.backButton}
-                    onPress={() => router.push('/')}
-                    activeOpacity={0.7}
-                >
-                    <MaterialIcons name="chevron-left" size={28} color="#2E7D32" />
-                </TouchableOpacity>
+            <KeyboardAvoidingView
+                style={styles.keyboardAvoidingView}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            >
+                <ImageBackground style={styles.background}>
+                    <TouchableOpacity
+                        style={styles.backButton}
+                        onPress={() => router.push('/')}
+                        activeOpacity={0.7}
+                    >
+                        <MaterialIcons name="chevron-left" size={28} color="#2E7D32" />
+                    </TouchableOpacity>
 
-                <View style={styles.headerContainer}>
-                    <View style={styles.headerRow}>
-                        <Image
-                            source={require('../../../assets/images/icon_bspid.png')}
-                            style={styles.logo}
-                            resizeMode="contain"
-                        />
-                        <View>
-                            <Text style={styles.title}>
-                                Sign Up
-                            </Text>
-                            <Text style={styles.subtitle}>
-                                Nasabah Bank Sampah Pintar
-                            </Text>
+                    <View style={styles.headerContainer}>
+                        <View style={styles.headerRow}>
+                            <Image
+                                source={require('../../../assets/images/icon_bspid.png')}
+                                style={styles.logo}
+                                resizeMode="contain"
+                            />
+                            <View>
+                                <Text style={styles.title}>
+                                    Sign Up
+                                </Text>
+                                <Text style={styles.subtitle}>
+                                    Nasabah Bank Sampah Pintar
+                                </Text>
+                            </View>
                         </View>
                     </View>
-                </View>
 
-                <ScrollView
-                    contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end' }}
-                    bounces={false}
-                    keyboardShouldPersistTaps="handled"
-                >
-                    <View style={{ height: height * 0.1 }} />
-
+                    {/* Signup Panel - Langsung ditampilkan penuh */}
                     <View style={styles.signupPanel}>
                         <Text style={styles.panelTitle}>Welcome!</Text>
                         <Text style={styles.panelSubtitle}>Register your account using phone number</Text>
@@ -210,28 +200,6 @@ export default function WelcomeScreen() {
                             </View>
                         </View>
 
-                        <View style={styles.inputLabelContainer}>
-                            <Text style={styles.inputLabel}>Confirm Password</Text>
-                            <View style={styles.passwordInputContainer2}>
-                                <TextInput
-                                    style={styles.passwordInput}
-                                    placeholder="Confirm your password"
-                                    placeholderTextColor="#A8ABB0"
-                                    value={confirmPassword}
-                                    onChangeText={setConfirmPassword}
-                                    secureTextEntry={secureConfirmText}
-                                    editable={!loading}
-                                />
-                                <TouchableOpacity onPress={() => setSecureConfirmText(!secureConfirmText)} disabled={loading}>
-                                    <MaterialIcons
-                                        name={secureConfirmText ? "visibility-off" : "visibility"}
-                                        size={20}
-                                        color="#A8ABB0"
-                                    />
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-
                         <TouchableOpacity
                             style={[styles.signupButton, loading && styles.signupButtonDisabled]}
                             onPress={handleRegister}
@@ -251,16 +219,26 @@ export default function WelcomeScreen() {
                             </TouchableOpacity>
                         </View>
                     </View>
-                </ScrollView>
-            </ImageBackground>
+                </ImageBackground>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
-
-    container: { flex: 1, backgroundColor: '#000' },
-    background: { flex: 1, width: '100%', height: '100%', backgroundColor: '#F5F5DC' },
+    container: {
+        flex: 1,
+        backgroundColor: '#F5F5DC'
+    },
+    keyboardAvoidingView: {
+        flex: 1,
+    },
+    background: {
+        flex: 1,
+        width: '100%',
+        height: '100%',
+        backgroundColor: '#EDEDF5'
+    },
     backButton: {
         position: 'absolute',
         top: 20,
@@ -281,6 +259,7 @@ const styles = StyleSheet.create({
     headerContainer: {
         alignItems: 'center',
         paddingTop: 60,
+        paddingBottom: 20,
     },
     headerRow: {
         flexDirection: 'column',
@@ -296,10 +275,15 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     subtitle: {
-        fontSize: 16,
+        fontSize: 14,
         color: '#555',
+        textAlign: 'center',
     },
-    logo: { width: 120, height: 120, marginRight: 16 },
+    logo: {
+        width: 100,
+        height: 100,
+        marginBottom: 8,
+    },
     signupPanel: {
         flex: 1,
         backgroundColor: '#fff',
@@ -308,16 +292,35 @@ const styles = StyleSheet.create({
         paddingHorizontal: 25,
         paddingTop: 30,
         paddingBottom: 40,
+        marginTop: 20,
+        justifyContent: 'space-between',
     },
-    panelTitle: { fontSize: 26, fontWeight: 'bold', color: '#1A1A1A', marginBottom: 5 },
-    panelSubtitle: { fontSize: 14, color: '#666', marginBottom: 30 },
-    inputLabelContainer: { marginBottom: 20 },
-    inputLabel: { fontSize: 14, fontWeight: '600', color: '#1A1A1A', marginBottom: 8, marginLeft: 5 },
+    panelTitle: {
+        fontSize: 30,
+        fontWeight: 'bold',
+        color: '#1A1A1A',
+        marginBottom: 5
+    },
+    panelSubtitle: {
+        fontSize: 14,
+        color: '#6B7280',
+        marginBottom: 30
+    },
+    inputLabelContainer: {
+        marginBottom: 20
+    },
+    inputLabel: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#1A1A1A',
+        marginBottom: 8,
+        marginLeft: 5
+    },
     phoneInputWrapper: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#F8F9FB',
-        borderRadius: 25,
+        borderRadius: 9999,
         paddingHorizontal: 15,
         borderWidth: 1,
         borderColor: '#F0F0F0',
@@ -333,56 +336,66 @@ const styles = StyleSheet.create({
         marginRight: 8,
     },
     countryCodeText: {
-        fontSize: 15,
+        fontSize: 16,
         fontWeight: '700',
         color: '#1A1A1A',
     },
     divider: {
         width: 1,
         height: 20,
-        backgroundColor: '#DDD',
+        backgroundColor: '#D1D5DB',
         marginHorizontal: 12,
     },
     phoneInput: {
         flex: 1,
         paddingVertical: 14,
-        fontSize: 15,
+        fontSize: 16,
         color: '#1A1A1A',
     },
     passwordInputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#F8F9FB',
-        borderRadius: 25,
-        paddingHorizontal: 20,
-        borderWidth: 1,
-        borderColor: '#F0F0F0',
-        marginBottom: 0,
-    },
-    passwordInputContainer2: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#F8F9FB',
-        borderRadius: 25,
+        borderRadius: 9999,
         paddingHorizontal: 20,
         borderWidth: 1,
         borderColor: '#F0F0F0',
     },
-    passwordInput: { flex: 1, paddingVertical: 14, color: '#1A1A1A', fontSize: 14 },
+    passwordInput: {
+        flex: 1,
+        paddingVertical: 14,
+        color: '#1A1A1A',
+        fontSize: 14
+    },
     signupButton: {
         backgroundColor: '#F68B1E',
         paddingVertical: 16,
-        borderRadius: 25,
+        borderRadius: 9999,
         alignItems: 'center',
         marginBottom: 20,
         marginTop: 10,
     },
     signupButtonDisabled: {
-        backgroundColor: '#F68B1E80',
         opacity: 0.7,
     },
-    signupButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-    footerContainer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
-    footerText: { color: '#666', fontSize: 14 },
-    signUpLinkText: { color: '#00512c', fontSize: 14, fontWeight: 'bold', textDecorationLine: 'underline' },
+    signupButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: 'bold'
+    },
+    footerContainer: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    footerText: {
+        color: '#6B7280',
+        fontSize: 14
+    },
+    signUpLinkText: {
+        color: '#00512c',
+        fontSize: 14,
+        fontWeight: 'bold',
+        textDecorationLine: 'underline'
+    },
 });
