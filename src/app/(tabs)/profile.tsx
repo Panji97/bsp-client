@@ -201,71 +201,107 @@ export default function SettingsScreen() {
     };
 
     // Function to handle logout - IMPROVED VERSION (tanpa multiRemove)
-    const handleLogout = async () => {
-        Alert.alert(
-            "Konfirmasi Logout",
-            "Apakah Anda yakin ingin keluar dari akun?",
-            [
-                {
-                    text: "Batal",
-                    style: "cancel"
-                },
-                {
-                    text: "Logout",
-                    style: "destructive",
-                    onPress: async () => {
-                        try {
-                            setIsLoggingOut(true);
+    // const handleLogout = async () => {
+    //     Alert.alert(
+    //         "Konfirmasi Logout",
+    //         "Apakah Anda yakin ingin keluar dari akun?",
+    //         [
+    //             {
+    //                 text: "Batal",
+    //                 style: "cancel"
+    //             },
+    //             {
+    //                 text: "Logout",
+    //                 style: "destructive",
+    //                 onPress: async () => {
+    //                     try {
+    //                         setIsLoggingOut(true);
 
-                            // 1. Panggil API logout jika diperlukan
-                            const token = await AsyncStorage.getItem('userToken');
-                            if (token) {
-                                try {
-                                    await fetch(`${API_BASE_URL}/api/auth/logout`, {
-                                        method: 'POST',
-                                        headers: {
-                                            'Authorization': `Bearer ${token}`,
-                                            'Content-Type': 'application/json',
-                                        },
-                                    });
-                                } catch (apiError) {
-                                    // Abaikan error API, tetap lanjutkan logout
-                                    console.log('Logout API error (ignored):', apiError);
-                                }
-                            }
+    //                         // 1. Panggil API logout jika diperlukan
+    //                         const token = await AsyncStorage.getItem('userToken');
+    //                         if (token) {
+    //                             try {
+    //                                 await fetch(`${API_BASE_URL}/api/auth/logout`, {
+    //                                     method: 'POST',
+    //                                     headers: {
+    //                                         'Authorization': `Bearer ${token}`,
+    //                                         'Content-Type': 'application/json',
+    //                                     },
+    //                                 });
+    //                             } catch (apiError) {
+    //                                 // Abaikan error API, tetap lanjutkan logout
+    //                                 console.log('Logout API error (ignored):', apiError);
+    //                             }
+    //                         }
 
-                            // 2. Hapus semua data autentikasi satu per satu
-                            await AsyncStorage.removeItem('userToken');
-                            await AsyncStorage.removeItem('refreshToken');
-                            await AsyncStorage.removeItem('userData');
-                            await AsyncStorage.removeItem('userEmail');
-                            await AsyncStorage.removeItem('userPhone');
-                            await AsyncStorage.removeItem('userWhatsapp');
-                            await AsyncStorage.removeItem('userName');
-                            await AsyncStorage.removeItem('userId');
+    //                         // 2. Hapus semua data autentikasi satu per satu
+    //                         await AsyncStorage.removeItem('userToken');
+    //                         await AsyncStorage.removeItem('refreshToken');
+    //                         await AsyncStorage.removeItem('userData');
+    //                         await AsyncStorage.removeItem('userEmail');
+    //                         await AsyncStorage.removeItem('userPhone');
+    //                         await AsyncStorage.removeItem('userWhatsapp');
+    //                         await AsyncStorage.removeItem('userName');
+    //                         await AsyncStorage.removeItem('userId');
 
-                            console.log('All authentication data cleared successfully');
+    //                         console.log('All authentication data cleared successfully');
 
-                            // 3. Reset state
-                            setWhatsapp('');
-                            setEmail('');
-                            setName('');
-                            setUserId(null);
+    //                         // 3. Reset state
+    //                         setWhatsapp('');
+    //                         setEmail('');
+    //                         setName('');
+    //                         setUserId(null);
 
-                            // 4. Navigasi ke login dengan replace (mencegah back)
-                            router.replace('/auth/login');
+    //                         // 4. Navigasi ke login dengan replace (mencegah back)
+    //                         router.replace('/auth/login');
 
-                        } catch (error) {
-                            console.error('Logout error:', error);
-                            Alert.alert('Error', 'Terjadi kesalahan saat logout. Silakan coba lagi.');
-                        } finally {
-                            setIsLoggingOut(false);
-                        }
-                    }
-                }
-            ],
-            { cancelable: false }
-        );
+    //                     } catch (error) {
+    //                         console.error('Logout error:', error);
+    //                         Alert.alert('Error', 'Terjadi kesalahan saat logout. Silakan coba lagi.');
+    //                     } finally {
+    //                         setIsLoggingOut(false);
+    //                     }
+    //                 }
+    //             }
+    //         ],
+    //         { cancelable: false }
+    //     );
+    // };
+
+    // Function to handle logout - DIRECT VERSION (tanpa konfirmasi)
+    const handleLogoutDirect = async () => {
+        try {
+            console.log('1. Starting logout...');
+            setIsLoggingOut(true);
+
+            console.log('2. Removing tokens...');
+            await AsyncStorage.removeItem('userToken');
+            await AsyncStorage.removeItem('refreshToken');
+            await AsyncStorage.removeItem('userData');
+            await AsyncStorage.removeItem('userEmail');
+            await AsyncStorage.removeItem('userPhone');
+            console.log('3. Tokens removed successfully');
+
+            console.log('4. Resetting state...');
+            setWhatsapp('');
+            setEmail('');
+            setName('');
+            setUserId(null);
+
+            console.log('5. Navigating to login...');
+            router.replace('/auth/login');
+            console.log('6. Navigation called');
+
+            // Verifikasi apakah AsyncStorage sudah kosong
+            const token = await AsyncStorage.getItem('userToken');
+            console.log('7. Token after removal:', token);
+
+        } catch (error) {
+            console.log('Logout error:', error);
+        } finally {
+            console.log('8. Logout finished');
+            setIsLoggingOut(false);
+        }
     };
 
     if (isLoading) {
@@ -301,7 +337,7 @@ export default function SettingsScreen() {
                     {/* Logout Button */}
                     <TouchableOpacity
                         style={[styles.logoutButton, isLoggingOut && styles.logoutButtonDisabled]}
-                        onPress={handleLogout}
+                        onPress={handleLogoutDirect}
                         disabled={isLoggingOut}
                         activeOpacity={0.7}
                     >
