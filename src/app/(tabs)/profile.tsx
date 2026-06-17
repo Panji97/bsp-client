@@ -268,6 +268,7 @@ export default function SettingsScreen() {
     //     );
     // };
 
+    // Function to handle logout - DIRECT VERSION (tanpa konfirmasi)
     const handleLogoutDirect = async () => {
         try {
             console.log('1. Starting logout...');

@@ -16,6 +16,7 @@ interface AuthContextType {
     login: (identifier: string, password: string) => Promise<any>;
     logout: () => Promise<void>;
     setAuthData: (token: string, user: User) => void;
+    forgotPassword: (phoneNumber: string) => Promise<void>; // Tambahkan ini
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -125,9 +126,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
+    // Fungsi forgotPassword
+    const forgotPassword = async (phoneNumber: string): Promise<void> => {
+        try {
+            // API call ke backend untuk forgot password
+            // Sesuaikan endpoint dengan API Anda
+            const response = await fetch('http://localhost:1337/api/auth/forgot-password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    phoneNumber: phoneNumber,
+                    // Jika backend menggunakan email, Anda bisa tambahkan:
+                    // email: email 
+                }),
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error?.message || 'Failed to send reset link');
+            }
+
+            // Jika sukses, return void (Promise<void>)
+            return;
+        } catch (error) {
+            console.error('Forgot password error:', error);
+            throw error;
+        }
+    };
+
     return (
-        <AuthContext.Provider value={{ user, isLoading, token, login, logout, setAuthData }}>
+        <AuthContext.Provider value={{ 
+            user, 
+            isLoading, 
+            token, 
+            login, 
+            logout, 
+            setAuthData,
+            forgotPassword // Tambahkan ini
+        }}>
             {children}
         </AuthContext.Provider>
     );
-}
+}  
