@@ -6,22 +6,26 @@ import { useAuth } from '../../context/authContext';
 
 const { height, width } = Dimensions.get('window');
 
-export default function WelcomeScreen() {
+export default function ForgotPasswordScreen() {
     const router = useRouter();
-    const { login, isLoading: authLoading } = useAuth();
+    const { forgotPassword, isLoading: authLoading } = useAuth();
     const [phoneNumber, setPhoneNumber] = useState<string>('');
-    const [password, setPassword] = useState<string>('');
-    const [secureText, setSecureText] = useState<boolean>(true);
     const [loading, setLoading] = useState<boolean>(false);
+    const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
 
     const handlePhoneChange = (text: string) => {
         const cleaned = text.replace(/[^0-9]/g, '');
         setPhoneNumber(cleaned);
     };
 
-    const handleLogin = async () => {
-        if (!phoneNumber || !password) {
-            Alert.alert('Error', 'Please fill all fields');
+    const handleForgotPassword = async () => {
+        if (!phoneNumber) {
+            Alert.alert('Error', 'Please enter your phone number');
+            return;
+        }
+
+        if (phoneNumber.length < 10) {
+            Alert.alert('Error', 'Please enter a valid phone number');
             return;
         }
 
@@ -31,13 +35,28 @@ export default function WelcomeScreen() {
                 ? `62${phoneNumber.substring(1)}`
                 : phoneNumber;
 
-            await login(identifier, password);
+            await forgotPassword(identifier);
+            setIsSubmitted(true);
+            Alert.alert(
+                'Success',
+                'Password reset link has been sent to your registered email. Please check your email.',
+                [
+                    {
+                        text: 'OK',
+                        onPress: () => router.push('/auth/login')
+                    }
+                ]
+            );
         } catch (error: any) {
-            Alert.alert('Login Failed', error.message || 'Invalid phone number or password');
+            Alert.alert('Error', error.message || 'Failed to send reset link. Please try again.');
         } finally {
             setLoading(false);
         }
-    }
+    };
+
+    const handleBackToLogin = () => {
+        router.push('/auth/login');
+    };
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -49,7 +68,7 @@ export default function WelcomeScreen() {
                     {/* Tombol Kembali */}
                     <TouchableOpacity
                         style={styles.backButton}
-                        onPress={() => router.push('/')}
+                        onPress={handleBackToLogin}
                         activeOpacity={0.7}
                         disabled={loading || authLoading}
                     >
@@ -66,7 +85,7 @@ export default function WelcomeScreen() {
                             />
                             <View>
                                 <Text style={styles.title}>
-                                    Log In
+                                    Forgot Password
                                 </Text>
                                 <Text style={styles.subtitle}>
                                     Nasabah Bank Sampah Pintar
@@ -75,10 +94,12 @@ export default function WelcomeScreen() {
                         </View>
                     </View>
 
-                    {/* Login Panel - Langsung ditampilkan penuh */}
+                    {/* Forgot Password Panel */}
                     <View style={styles.loginPanel}>
-                        <Text style={styles.welcomeTitle}>Welcome!</Text>
-                        <Text style={styles.welcomeSubtitle}>Log In to your account using phone number</Text>
+                        <Text style={styles.welcomeTitle}>Forgot Password?</Text>
+                        <Text style={styles.welcomeSubtitle}>
+                            Enter your phone number to reset your password
+                        </Text>
 
                         {/* Phone Number Input */}
                         <View style={styles.inputSection}>
@@ -106,52 +127,32 @@ export default function WelcomeScreen() {
                             </View>
                         </View>
 
-                        {/* Password Input */}
-                        <View style={styles.inputSection}>
-                            <Text style={styles.inputLabel}>Password</Text>
-                            <View style={styles.passwordInputWrapper}>
-                                <TextInput
-                                    style={styles.passwordTextInput}
-                                    placeholder="Enter your password"
-                                    placeholderTextColor="#A8ABB0"
-                                    value={password}
-                                    onChangeText={setPassword}
-                                    secureTextEntry={secureText}
-                                    editable={!loading && !authLoading}
-                                />
-                                <TouchableOpacity onPress={() => setSecureText(!secureText)} disabled={loading || authLoading}>
-                                    <MaterialIcons
-                                        name={secureText ? "visibility-off" : "visibility"}
-                                        size={20}
-                                        color="#A8ABB0"
-                                    />
-                                </TouchableOpacity>
-                            </View>
+                        {/* Info Text */}
+                        <View style={styles.infoContainer}>
+                            <MaterialIcons name="info-outline" size={16} color="#6B7280" />
+                            <Text style={styles.infoText}>
+                                We'll send a password reset link to your registered email
+                            </Text>
                         </View>
 
-                        {/* Forgot Password */}
-                        <TouchableOpacity style={styles.forgotPasswordContainer} disabled={loading || authLoading} onPress={() => router.push('./forgotPassword')}>
-                            <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-                        </TouchableOpacity>
-
-                        {/* Login Button */}
+                        {/* Reset Password Button */}
                         <TouchableOpacity
-                            style={[styles.loginButton, (loading || authLoading) && styles.disabledButton]}
-                            onPress={handleLogin}
+                            style={[styles.resetButton, (loading || authLoading) && styles.disabledButton]}
+                            onPress={handleForgotPassword}
                             disabled={loading || authLoading}
                         >
                             {(loading || authLoading) ? (
                                 <ActivityIndicator color="#fff" />
                             ) : (
-                                <Text style={styles.loginButtonText}>Log In</Text>
+                                <Text style={styles.resetButtonText}>Send Reset Link</Text>
                             )}
                         </TouchableOpacity>
 
                         {/* Footer */}
                         <View style={styles.footer}>
-                            <Text style={styles.footerText}>Don't have an account?</Text>
-                            <TouchableOpacity onPress={() => router.push('../auth/signup')} disabled={loading || authLoading}>
-                                <Text style={styles.signupText}> Sign Up</Text>
+                            <Text style={styles.footerText}>Remember your password?</Text>
+                            <TouchableOpacity onPress={handleBackToLogin} disabled={loading || authLoading}>
+                                <Text style={styles.loginText}> Log In</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -178,7 +179,6 @@ const styles = StyleSheet.create({
         height: '100%',
         backgroundColor: '#EDEDF5',
     },
-    // Tombol Kembali - Bulat di pojok kiri atas
     backButton: {
         position: 'absolute',
         top: 20,
@@ -292,38 +292,29 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#1A1A1A',
     },
-    passwordInputWrapper: {
+    infoContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#F8F9FB',
-        borderRadius: 9999,
-        paddingHorizontal: 20,
-        borderWidth: 1,
-        borderColor: '#F0F0F0',
-    },
-    passwordTextInput: {
-        flex: 1,
-        paddingVertical: 14,
-        color: '#1A1A1A',
-        fontSize: 14,
-    },
-    forgotPasswordContainer: {
-        alignSelf: 'flex-end',
+        backgroundColor: '#F3F4F6',
+        padding: 12,
+        borderRadius: 12,
         marginBottom: 24,
+        gap: 8,
     },
-    forgotPasswordText: {
-        color: '#00512c',
+    infoText: {
+        flex: 1,
         fontSize: 12,
-        fontWeight: '600',
+        color: '#6B7280',
+        lineHeight: 16,
     },
-    loginButton: {
+    resetButton: {
         backgroundColor: '#F68B1E',
         paddingVertical: 16,
         borderRadius: 9999,
         alignItems: 'center',
         marginBottom: 40,
     },
-    loginButtonText: {
+    resetButtonText: {
         color: 'white',
         fontSize: 16,
         fontWeight: 'bold',
@@ -337,7 +328,7 @@ const styles = StyleSheet.create({
         color: '#6B7280',
         fontSize: 14,
     },
-    signupText: {
+    loginText: {
         color: '#00512c',
         fontSize: 14,
         fontWeight: 'bold',
