@@ -13,10 +13,14 @@ interface AuthContextType {
     user: User | null;
     isLoading: boolean;
     token: string | null;
-    login: (identifier: string, password: string) => Promise<any>;
+    authLoading: boolean;
+    // Fungsi login dihapus dari sini
     logout: () => Promise<void>;
-    setAuthData: (token: string, user: User) => void;
-    forgotPassword: (phoneNumber: string) => Promise<void>; // Tambahkan ini
+    setAuthData: (token: string, user: User) => Promise<void>; // Ubah jadi async
+    forgotPassword: (phoneNumber: string) => Promise<void>;
+    verifyOTP: (phoneNumber: string, otp: string) => Promise<void>;
+    resetPassword: (phoneNumber: string, newPassword: string) => Promise<void>;
+    changePassword: (oldPassword: string, newPassword: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -39,12 +43,9 @@ function useProtectedRoute(user: User | null, isLoading: boolean) {
         const inAuthGroup = segments[0] === 'auth';
         const inTabsGroup = segments[0] === '(tabs)';
 
-        // Jika user tidak login dan mencoba akses protected route ((tabs))
         if (!user && inTabsGroup) {
             router.replace('/auth/login');
-        }
-        // Jika user login dan mencoba akses auth route
-        else if (user && inAuthGroup) {
+        } else if (user && inAuthGroup) {
             router.replace('/(tabs)/home');
         }
     }, [user, segments, isLoading]);
@@ -54,6 +55,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [token, setToken] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [authLoading, setAuthLoading] = useState(false);
 
     useProtectedRoute(user, isLoading);
 
@@ -77,39 +79,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
-    const setAuthData = (newToken: string, newUser: User) => {
-        setToken(newToken);
-        setUser(newUser);
-    };
-
-    const login = async (identifier: string, password: string) => {
+    // Fungsi untuk set auth data ke context dan AsyncStorage
+    const setAuthData = async (newToken: string, newUser: User) => {
         try {
-            const response = await fetch('http://localhost:1337/api/auth/local', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    identifier: identifier,
-                    password: password,
-                }),
-            });
-
-            const result = await response.json();
-
-            if (response.ok) {
-                // Simpan token dan user data
-                await AsyncStorage.setItem('userToken', result.jwt);
-                await AsyncStorage.setItem('userData', JSON.stringify(result.user));
-
-                setToken(result.jwt);
-                setUser(result.user);
-
-                return result;
-            } else {
-                throw new Error(result.error?.message || 'Login failed');
-            }
+            await AsyncStorage.setItem('userToken', newToken);
+            await AsyncStorage.setItem('userData', JSON.stringify(newUser));
+            setToken(newToken);
+            setUser(newUser);
         } catch (error) {
+            console.error('Error saving auth data:', error);
             throw error;
         }
     };
@@ -126,48 +104,101 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
-    // Fungsi forgotPassword
-    const forgotPassword = async (phoneNumber: string): Promise<void> => {
+    const fetchWithErrorHandling = async (url: string, options: RequestInit) => {
+        const response = await fetch(url, {
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers,
+            },
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.message || 'Request failed');
+        }
+
+        return data;
+    };
+
+    const forgotPassword = async (phoneNumber: string) => {
+        setAuthLoading(true);
         try {
-            // API call ke backend untuk forgot password
-            // Sesuaikan endpoint dengan API Anda
-            const response = await fetch('http://localhost:1337/api/auth/forgot-password', {
+            const data = await fetchWithErrorHandling('http://localhost:1337/api/auth/forgot-password', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ 
-                    phoneNumber: phoneNumber,
-                    // Jika backend menggunakan email, Anda bisa tambahkan:
-                    // email: email 
-                }),
+                body: JSON.stringify({ phoneNumber }),
             });
+            return data;
+        } catch (error: any) {
+            throw new Error(error.message || 'Failed to send OTP');
+        } finally {
+            setAuthLoading(false);
+        }
+    };
 
-            const result = await response.json();
+    const verifyOTP = async (phoneNumber: string, otp: string) => {
+        setAuthLoading(true);
+        try {
+            const data = await fetchWithErrorHandling('http://localhost:1337/api/auth/verify-otp', {
+                method: 'POST',
+                body: JSON.stringify({ phoneNumber, otp }),
+            });
+            return data;
+        } catch (error: any) {
+            throw new Error(error.message || 'Invalid OTP');
+        } finally {
+            setAuthLoading(false);
+        }
+    };
 
-            if (!response.ok) {
-                throw new Error(result.error?.message || 'Failed to send reset link');
-            }
+    const resetPassword = async (phoneNumber: string, newPassword: string) => {
+        setAuthLoading(true);
+        try {
+            const data = await fetchWithErrorHandling('http://localhost:1337/api/auth/reset-password', {
+                method: 'POST',
+                body: JSON.stringify({ phoneNumber, newPassword }),
+            });
+            return data;
+        } catch (error: any) {
+            throw new Error(error.message || 'Failed to reset password');
+        } finally {
+            setAuthLoading(false);
+        }
+    };
 
-            // Jika sukses, return void (Promise<void>)
-            return;
-        } catch (error) {
-            console.error('Forgot password error:', error);
-            throw error;
+    const changePassword = async (oldPassword: string, newPassword: string) => {
+        setAuthLoading(true);
+        try {
+            const data = await fetchWithErrorHandling('http://localhost:1337/api/auth/change-password', {
+                method: 'POST',
+                body: JSON.stringify({ oldPassword, newPassword }),
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+            return data;
+        } catch (error: any) {
+            throw new Error(error.message || 'Failed to change password');
+        } finally {
+            setAuthLoading(false);
         }
     };
 
     return (
-        <AuthContext.Provider value={{ 
-            user, 
-            isLoading, 
-            token, 
-            login, 
-            logout, 
-            setAuthData,
-            forgotPassword // Tambahkan ini
+        <AuthContext.Provider value={{
+            user,
+            isLoading,
+            authLoading,
+            token,
+            logout,
+            setAuthData, // Expose fungsi ini
+            forgotPassword,
+            verifyOTP,
+            resetPassword,
+            changePassword,
         }}>
             {children}
         </AuthContext.Provider>
     );
-}  
+}

@@ -10,6 +10,7 @@ export default function ForgotPasswordScreen() {
     const router = useRouter();
     const { forgotPassword, isLoading: authLoading } = useAuth();
     const [phoneNumber, setPhoneNumber] = useState<string>('');
+    const [email, setEmail] = useState<string>('');
     const [loading, setLoading] = useState<boolean>(false);
     const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
 
@@ -124,6 +125,21 @@ export default function ForgotPasswordScreen() {
                                     editable={!loading && !authLoading}
                                 />
                                 <MaterialIcons name="phone-iphone" size={20} color="#A8ABB0" />
+                            </View>
+                        </View>
+
+                        <View style={styles.inputLabelContainer}>
+                            <Text style={styles.inputLabel}>Email</Text>
+                            <View style={styles.passwordInputContainer}>
+                                <TextInput
+                                    style={styles.passwordInput}
+                                    placeholder="Enter your email"
+                                    placeholderTextColor="#A8ABB0"
+                                    value={email}
+                                    onChangeText={setEmail}
+                                    keyboardType="email-address"
+                                    editable={!loading}
+                                />
                             </View>
                         </View>
 
@@ -334,5 +350,24 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         textDecorationLine: 'underline',
         paddingBottom: 4,
+    },
+
+    inputLabelContainer: {
+        marginBottom: 20
+    },
+    passwordInputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F8F9FB',
+        borderRadius: 9999,
+        paddingHorizontal: 20,
+        borderWidth: 1,
+        borderColor: '#F0F0F0',
+    },
+    passwordInput: {
+        flex: 1,
+        paddingVertical: 14,
+        color: '#1A1A1A',
+        fontSize: 14
     },
 });

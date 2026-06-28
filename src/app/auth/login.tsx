@@ -1,27 +1,70 @@
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { Image, ImageBackground, Text, TouchableOpacity, View, TextInput, Dimensions, SafeAreaView, StyleSheet, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { Image, ImageBackground, Text, TouchableOpacity, View, TextInput, Dimensions, SafeAreaView, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, Pressable } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import Modal from 'react-native-modal';
 import { useAuth } from '../../context/authContext';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const { height, width } = Dimensions.get('window');
 
 export default function WelcomeScreen() {
     const router = useRouter();
-    const { login, isLoading: authLoading } = useAuth();
+    const { setAuthData, isLoading: authLoading } = useAuth();
     const [phoneNumber, setPhoneNumber] = useState<string>('');
     const [password, setPassword] = useState<string>('');
     const [secureText, setSecureText] = useState<boolean>(true);
     const [loading, setLoading] = useState<boolean>(false);
+
+    // Modal states
+    const [modalVisible, setModalVisible] = useState<boolean>(false);
+    const [modalConfig, setModalConfig] = useState<{
+        type: 'success' | 'error' | 'warning' | 'info';
+        title: string;
+        message: string;
+        buttons?: Array<{
+            text: string;
+            onPress?: () => void;
+            variant?: 'primary' | 'secondary' | 'danger';
+        }>;
+    }>({
+        type: 'info',
+        title: '',
+        message: '',
+        buttons: [{ text: 'OK', variant: 'primary' }]
+    });
 
     const handlePhoneChange = (text: string) => {
         const cleaned = text.replace(/[^0-9]/g, '');
         setPhoneNumber(cleaned);
     };
 
+    const showModal = (config: {
+        type: 'success' | 'error' | 'warning' | 'info';
+        title: string;
+        message: string;
+        buttons?: Array<{
+            text: string;
+            onPress?: () => void;
+            variant?: 'primary' | 'secondary' | 'danger';
+        }>;
+    }) => {
+        setModalConfig({
+            type: config.type,
+            title: config.title,
+            message: config.message,
+            buttons: config.buttons || [{ text: 'OK', variant: 'primary' }]
+        });
+        setModalVisible(true);
+    };
+
     const handleLogin = async () => {
         if (!phoneNumber || !password) {
-            Alert.alert('Error', 'Please fill all fields');
+            showModal({
+                type: 'warning',
+                title: 'Oops!',
+                message: 'Mohon lengkapi semua field yang diperlukan'
+            });
             return;
         }
 
@@ -31,13 +74,193 @@ export default function WelcomeScreen() {
                 ? `62${phoneNumber.substring(1)}`
                 : phoneNumber;
 
-            await login(identifier, password);
+            const response = await fetch('http://localhost:1337/api/auth/local', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    identifier: identifier,
+                    password: password,
+                }),
+            });
+
+            const result = await response.json();
+
+            console.log('Response status:', response.status);
+            console.log('Response data:', result);
+
+            if (response.ok) {
+                const { jwt, user } = result;
+
+                if (jwt && user) {
+                    showModal({
+                        type: 'success',
+                        title: 'Welcome Back! 🎉',
+                        message: `Halo ${user.username || 'Nasabah'}, senang melihatmu kembali!`,
+                        buttons: [{
+                            text: 'Lanjutkan',
+                            variant: 'primary',
+                            onPress: () => {
+                                setAuthData(jwt, user);
+                            }
+                        }]
+                    });
+                } else {
+                    showModal({
+                        type: 'error',
+                        title: 'Oops!',
+                        message: 'Data login tidak lengkap. Silahkan coba lagi.'
+                    });
+                }
+            } else {
+                let errorMessage = 'Login gagal. Silahkan coba lagi.';
+                let errorDetails = '';
+
+                if (result.error) {
+                    errorMessage = result.error.message || errorMessage;
+                    errorDetails = result.error.details?.message || '';
+
+                    if (result.error.status === 400) {
+                        errorMessage = 'Nomor HP atau password tidak valid';
+                    } else if (result.error.status === 401) {
+                        errorMessage = 'Password yang Anda masukkan salah';
+                    } else if (result.error.status === 404) {
+                        errorMessage = 'Akun tidak ditemukan';
+                    }
+                } else if (result.message) {
+                    errorMessage = result.message;
+                }
+
+                const errorLower = errorMessage.toLowerCase();
+                const detailsLower = errorDetails.toLowerCase();
+
+                if (errorLower.includes('identifier') ||
+                    errorLower.includes('phone') ||
+                    errorLower.includes('number') ||
+                    detailsLower.includes('identifier') ||
+                    detailsLower.includes('phone')) {
+                    showModal({
+                        type: 'error',
+                        title: 'Akun Tidak Ditemukan',
+                        message: 'Nomor HP tidak terdaftar. Periksa kembali nomor Anda.'
+                    });
+                } else if (errorLower.includes('password') ||
+                    detailsLower.includes('password') ||
+                    result.error?.status === 401) {
+                    showModal({
+                        type: 'warning',
+                        title: 'Password Salah',
+                        message: 'Password yang Anda masukkan salah. Silahkan coba lagi.',
+                        buttons: [
+                            {
+                                text: 'Coba Lagi',
+                                variant: 'primary',
+                                onPress: () => {
+                                    setModalVisible(false);
+                                }
+                            },
+                            {
+                                text: 'Lupa Password',
+                                variant: 'secondary',
+                                onPress: () => {
+                                    setModalVisible(false);
+                                    router.push('./forgotPassword');
+                                }
+                            }
+                        ]
+                    });
+                } else {
+                    showModal({
+                        type: 'error',
+                        title: 'Login Gagal',
+                        message: errorMessage
+                    });
+                }
+            }
         } catch (error: any) {
-            Alert.alert('Login Failed', error.message || 'Invalid phone number or password');
+            console.error('Login error:', error);
+
+            showModal({
+                type: 'info',
+                title: 'Koneksi Gagal',
+                message: 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.',
+                buttons: [
+                    {
+                        text: 'Coba Lagi',
+                        variant: 'primary',
+                        onPress: () => {
+                            setModalVisible(false);
+                            handleLogin();
+                        }
+                    },
+                    {
+                        text: 'Batal',
+                        variant: 'secondary'
+                    }
+                ]
+            });
         } finally {
             setLoading(false);
         }
-    }
+    };
+
+    // Render modal icon dengan desain modern
+    const renderModalIcon = () => {
+        const iconConfig = {
+            success: { name: 'check-circle', color: '#10B981', bg: '#D1FAE5' },
+            error: { name: 'cancel', color: '#EF4444', bg: '#FEE2E2' },
+            warning: { name: 'warning', color: '#F59E0B', bg: '#FEF3C7' },
+            info: { name: 'info', color: '#3B82F6', bg: '#DBEAFE' }
+        };
+
+        const config = iconConfig[modalConfig.type];
+        return (
+            <View style={[styles.iconWrapper, { backgroundColor: config.bg }]}>
+                <MaterialIcons name={config.name as any} size={48} color={config.color} />
+            </View>
+        );
+    };
+
+    // Render button dengan variant
+    const renderButton = (button: any, index: number) => {
+        const buttonStyles = {
+            primary: styles.btnPrimary,
+            secondary: styles.btnSecondary,
+            danger: styles.btnDanger
+        };
+
+        const textStyles = {
+            primary: styles.btnTextPrimary,
+            secondary: styles.btnTextSecondary,
+            danger: styles.btnTextDanger
+        };
+
+        const variant = button.variant || 'primary';
+
+        return (
+            <Pressable
+                key={index}
+                style={({ pressed }) => [
+                    styles.modalButton,
+                    buttonStyles[variant as keyof typeof buttonStyles],
+                    pressed && styles.btnPressed
+                ]}
+                onPress={() => {
+                    if (button.onPress) {
+                        button.onPress();
+                    }
+                    if (modalConfig.buttons && modalConfig.buttons.length === 1) {
+                        setModalVisible(false);
+                    }
+                }}
+            >
+                <Text style={[styles.modalButtonText, textStyles[variant as keyof typeof textStyles]]}>
+                    {button.text}
+                </Text>
+            </Pressable>
+        );
+    };
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -46,17 +269,14 @@ export default function WelcomeScreen() {
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             >
                 <ImageBackground style={styles.background}>
-                    {/* Tombol Kembali */}
-                    <TouchableOpacity
+                    <Pressable
                         style={styles.backButton}
                         onPress={() => router.push('/')}
-                        activeOpacity={0.7}
                         disabled={loading || authLoading}
                     >
                         <MaterialIcons name="chevron-left" size={28} color="#2E7D32" />
-                    </TouchableOpacity>
+                    </Pressable>
 
-                    {/* Header Section */}
                     <View style={styles.headerContainer}>
                         <View style={styles.headerRow}>
                             <Image
@@ -65,22 +285,16 @@ export default function WelcomeScreen() {
                                 resizeMode="contain"
                             />
                             <View>
-                                <Text style={styles.title}>
-                                    Log In
-                                </Text>
-                                <Text style={styles.subtitle}>
-                                    Nasabah Bank Sampah Pintar
-                                </Text>
+                                <Text style={styles.title}>Log In</Text>
+                                <Text style={styles.subtitle}>Nasabah Bank Sampah Pintar</Text>
                             </View>
                         </View>
                     </View>
 
-                    {/* Login Panel - Langsung ditampilkan penuh */}
                     <View style={styles.loginPanel}>
                         <Text style={styles.welcomeTitle}>Welcome!</Text>
                         <Text style={styles.welcomeSubtitle}>Log In to your account using phone number</Text>
 
-                        {/* Phone Number Input */}
                         <View style={styles.inputSection}>
                             <Text style={styles.inputLabel}>Phone Number</Text>
                             <View style={styles.phoneInputWrapper}>
@@ -106,7 +320,6 @@ export default function WelcomeScreen() {
                             </View>
                         </View>
 
-                        {/* Password Input */}
                         <View style={styles.inputSection}>
                             <Text style={styles.inputLabel}>Password</Text>
                             <View style={styles.passwordInputWrapper}>
@@ -119,23 +332,25 @@ export default function WelcomeScreen() {
                                     secureTextEntry={secureText}
                                     editable={!loading && !authLoading}
                                 />
-                                <TouchableOpacity onPress={() => setSecureText(!secureText)} disabled={loading || authLoading}>
+                                <Pressable onPress={() => setSecureText(!secureText)} disabled={loading || authLoading}>
                                     <MaterialIcons
                                         name={secureText ? "visibility-off" : "visibility"}
                                         size={20}
                                         color="#A8ABB0"
                                     />
-                                </TouchableOpacity>
+                                </Pressable>
                             </View>
                         </View>
 
-                        {/* Forgot Password */}
-                        <TouchableOpacity style={styles.forgotPasswordContainer} disabled={loading || authLoading} onPress={() => router.push('./forgotPassword')}>
+                        <Pressable
+                            style={styles.forgotPasswordContainer}
+                            disabled={loading || authLoading}
+                            onPress={() => router.push('./forgotPassword')}
+                        >
                             <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-                        </TouchableOpacity>
+                        </Pressable>
 
-                        {/* Login Button */}
-                        <TouchableOpacity
+                        <Pressable
                             style={[styles.loginButton, (loading || authLoading) && styles.disabledButton]}
                             onPress={handleLogin}
                             disabled={loading || authLoading}
@@ -145,18 +360,47 @@ export default function WelcomeScreen() {
                             ) : (
                                 <Text style={styles.loginButtonText}>Log In</Text>
                             )}
-                        </TouchableOpacity>
+                        </Pressable>
 
-                        {/* Footer */}
                         <View style={styles.footer}>
                             <Text style={styles.footerText}>Don't have an account?</Text>
-                            <TouchableOpacity onPress={() => router.push('../auth/signup')} disabled={loading || authLoading}>
+                            <Pressable onPress={() => router.push('../auth/signup')} disabled={loading || authLoading}>
                                 <Text style={styles.signupText}> Sign Up</Text>
-                            </TouchableOpacity>
+                            </Pressable>
                         </View>
                     </View>
                 </ImageBackground>
             </KeyboardAvoidingView>
+
+            {/* Modern Modal */}
+            <Modal
+                isVisible={modalVisible}
+                backdropOpacity={0.3}
+                backdropColor="#000"
+                animationIn="fadeIn"
+                animationOut="fadeOut"
+                animationInTiming={250}
+                animationOutTiming={250}
+                useNativeDriver={true}
+                hideModalContentWhileAnimating={true}
+                style={styles.modal}
+            >
+                <View style={styles.modalContainer}>
+                    {/* Icon */}
+                    {renderModalIcon()}
+
+                    {/* Title */}
+                    <Text style={styles.modalTitle}>{modalConfig.title}</Text>
+
+                    {/* Message */}
+                    <Text style={styles.modalMessage}>{modalConfig.message}</Text>
+
+                    {/* Buttons */}
+                    <View style={styles.modalButtonContainer}>
+                        {modalConfig.buttons && modalConfig.buttons.map((button, index) => renderButton(button, index))}
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 }
@@ -178,7 +422,6 @@ const styles = StyleSheet.create({
         height: '100%',
         backgroundColor: '#EDEDF5',
     },
-    // Tombol Kembali - Bulat di pojok kiri atas
     backButton: {
         position: 'absolute',
         top: 20,
@@ -343,5 +586,96 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         textDecorationLine: 'underline',
         paddingBottom: 4,
+    },
+    // Modern Modal Styles
+    modal: {
+        justifyContent: 'center',
+        alignItems: 'center',
+        margin: 0,
+    },
+    modalContainer: {
+        backgroundColor: 'white',
+        borderRadius: 24,
+        padding: 32,
+        width: '85%',
+        maxWidth: 340,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 10,
+        },
+        shadowOpacity: 0.15,
+        shadowRadius: 20,
+        elevation: 10,
+    },
+    iconWrapper: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    modalTitle: {
+        fontSize: 22,
+        fontWeight: '700',
+        color: '#1A1A1A',
+        marginBottom: 8,
+        textAlign: 'center',
+        letterSpacing: -0.5,
+    },
+    modalMessage: {
+        fontSize: 15,
+        color: '#6B7280',
+        textAlign: 'center',
+        marginBottom: 28,
+        lineHeight: 22,
+        letterSpacing: 0.2,
+    },
+    modalButtonContainer: {
+        width: '100%',
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        gap: 10,
+    },
+    modalButton: {
+        paddingVertical: 12,
+        paddingHorizontal: 28,
+        borderRadius: 12,
+        minWidth: 100,
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: 48,
+    },
+    btnPrimary: {
+        backgroundColor: '#F68B1E',
+    },
+    btnSecondary: {
+        backgroundColor: '#F3F4F6',
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+    },
+    btnDanger: {
+        backgroundColor: '#EF4444',
+    },
+    btnPressed: {
+        opacity: 0.8,
+        transform: [{ scale: 0.97 }],
+    },
+    modalButtonText: {
+        fontSize: 15,
+        fontWeight: '600',
+        letterSpacing: 0.3,
+    },
+    btnTextPrimary: {
+        color: 'white',
+    },
+    btnTextSecondary: {
+        color: '#374151',
+    },
+    btnTextDanger: {
+        color: 'white',
     },
 });
