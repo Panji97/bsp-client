@@ -1,18 +1,22 @@
-import { View, Text, Dimensions, TextInput, TouchableOpacity, ScrollView, StyleSheet, Image, Alert, ActivityIndicator } from 'react-native';
+// app/profile/index.tsx
+import { View, Text, Dimensions, TextInput, TouchableOpacity, ScrollView, StyleSheet, Image, Alert, ActivityIndicator, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useAuth } from '../../context/authContext';
 
 const { width } = Dimensions.get('window');
 
 // API Base URL - sesuaikan dengan backend Anda
-const API_BASE_URL = 'https://your-api-url.com'; // Ganti dengan URL API Anda
+const API_BASE_URL = 'https://your-api-url.com';
+// kenapa tidak pakai localhost? karena di emulator, localhost merujuk ke emulator itu sendiri, bukan ke komputer Anda. Gunakan IP komputer Anda atau layanan seperti ngrok untuk akses dari emulator.
 
 export default function SettingsScreen() {
     const router = useRouter();
+    const { changePassword, authLoading } = useAuth();
 
     // State for editable fields
     const [whatsapp, setWhatsapp] = useState('');
@@ -24,6 +28,16 @@ export default function SettingsScreen() {
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [userId, setUserId] = useState(null);
+
+    // State for Change Password Modal
+    const [showPasswordModal, setShowPasswordModal] = useState(false);
+    const [oldPassword, setOldPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [showOldPassword, setShowOldPassword] = useState(false);
+    const [showNewPassword, setShowNewPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [isChangingPassword, setIsChangingPassword] = useState(false);
 
     // Fetch user data from database
     useEffect(() => {
@@ -74,6 +88,7 @@ export default function SettingsScreen() {
                 console.error('Fallback error:', fallbackError);
             }
         } finally {
+            console.log('Finished fetching user data');
             setIsLoading(false);
         }
     };
@@ -200,73 +215,68 @@ export default function SettingsScreen() {
         }
     };
 
-    // Function to handle logout - IMPROVED VERSION (tanpa multiRemove)
-    // const handleLogout = async () => {
-    //     Alert.alert(
-    //         "Konfirmasi Logout",
-    //         "Apakah Anda yakin ingin keluar dari akun?",
-    //         [
-    //             {
-    //                 text: "Batal",
-    //                 style: "cancel"
-    //             },
-    //             {
-    //                 text: "Logout",
-    //                 style: "destructive",
-    //                 onPress: async () => {
-    //                     try {
-    //                         setIsLoggingOut(true);
+    // Function to handle Change Password
+    const handleChangePassword = async () => {
+        // Validasi input
+        if (!oldPassword) {
+            Alert.alert('Error', 'Masukkan password lama Anda');
+            return;
+        }
 
-    //                         // 1. Panggil API logout jika diperlukan
-    //                         const token = await AsyncStorage.getItem('userToken');
-    //                         if (token) {
-    //                             try {
-    //                                 await fetch(`${API_BASE_URL}/api/auth/logout`, {
-    //                                     method: 'POST',
-    //                                     headers: {
-    //                                         'Authorization': `Bearer ${token}`,
-    //                                         'Content-Type': 'application/json',
-    //                                     },
-    //                                 });
-    //                             } catch (apiError) {
-    //                                 // Abaikan error API, tetap lanjutkan logout
-    //                                 console.log('Logout API error (ignored):', apiError);
-    //                             }
-    //                         }
+        if (!newPassword) {
+            Alert.alert('Error', 'Masukkan password baru');
+            return;
+        }
 
-    //                         // 2. Hapus semua data autentikasi satu per satu
-    //                         await AsyncStorage.removeItem('userToken');
-    //                         await AsyncStorage.removeItem('refreshToken');
-    //                         await AsyncStorage.removeItem('userData');
-    //                         await AsyncStorage.removeItem('userEmail');
-    //                         await AsyncStorage.removeItem('userPhone');
-    //                         await AsyncStorage.removeItem('userWhatsapp');
-    //                         await AsyncStorage.removeItem('userName');
-    //                         await AsyncStorage.removeItem('userId');
+        if (newPassword.length < 6) {
+            Alert.alert('Error', 'Password baru minimal 6 karakter');
+            return;
+        }
 
-    //                         console.log('All authentication data cleared successfully');
+        if (newPassword !== confirmPassword) {
+            Alert.alert('Error', 'Password baru dan konfirmasi password tidak cocok');
+            return;
+        }
 
-    //                         // 3. Reset state
-    //                         setWhatsapp('');
-    //                         setEmail('');
-    //                         setName('');
-    //                         setUserId(null);
+        if (oldPassword === newPassword) {
+            Alert.alert('Error', 'Password baru harus berbeda dengan password lama');
+            return;
+        }
 
-    //                         // 4. Navigasi ke login dengan replace (mencegah back)
-    //                         router.replace('/auth/login');
+        try {
+            setIsChangingPassword(true);
+            await changePassword(oldPassword, newPassword);
 
-    //                     } catch (error) {
-    //                         console.error('Logout error:', error);
-    //                         Alert.alert('Error', 'Terjadi kesalahan saat logout. Silakan coba lagi.');
-    //                     } finally {
-    //                         setIsLoggingOut(false);
-    //                     }
-    //                 }
-    //             }
-    //         ],
-    //         { cancelable: false }
-    //     );
-    // };
+            // Reset form
+            setOldPassword('');
+            setNewPassword('');
+            setConfirmPassword('');
+            setShowOldPassword(false);
+            setShowNewPassword(false);
+            setShowConfirmPassword(false);
+
+            // Close modal
+            setShowPasswordModal(false);
+
+            Alert.alert(
+                'Sukses',
+                'Password berhasil diperbarui',
+                [
+                    {
+                        text: 'OK',
+                        onPress: () => {
+                            // Optional: logout user after password change
+                            // handleLogoutDirect();
+                        }
+                    }
+                ]
+            );
+        } catch (error: any) {
+            Alert.alert('Error', error.message || 'Gagal mengubah password');
+        } finally {
+            setIsChangingPassword(false);
+        }
+    };
 
     // Function to handle logout - DIRECT VERSION (tanpa konfirmasi)
     const handleLogoutDirect = async () => {
@@ -302,6 +312,17 @@ export default function SettingsScreen() {
             console.log('8. Logout finished');
             setIsLoggingOut(false);
         }
+    };
+
+    // Open Password Modal
+    const openPasswordModal = () => {
+        setOldPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+        setShowOldPassword(false);
+        setShowNewPassword(false);
+        setShowConfirmPassword(false);
+        setShowPasswordModal(true);
     };
 
     if (isLoading) {
@@ -498,8 +519,12 @@ export default function SettingsScreen() {
                         <Text style={styles.sectionTitle}>Keamanan</Text>
                     </View>
 
-                    {/* Update Password Row */}
-                    <TouchableOpacity style={styles.row} onPress={() => router.push('/profile')}>
+                    {/* Update Password Row - NOW WITH FUNCTIONALITY */}
+                    <TouchableOpacity
+                        style={styles.row}
+                        onPress={openPasswordModal}
+                        activeOpacity={0.7}
+                    >
                         <View style={styles.rowIcon}>
                             <Ionicons name="lock-closed-outline" size={22} color="#FF6B00" />
                         </View>
@@ -532,6 +557,175 @@ export default function SettingsScreen() {
                     <Text style={styles.versionText}>Versi Aplikasi 1.0.0</Text>
                 </View>
             </ScrollView>
+
+            {/* Modal Change Password */}
+            <Modal
+                visible={showPasswordModal}
+                transparent={true}
+                animationType="slide"
+                onRequestClose={() => setShowPasswordModal(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Edit Password</Text>
+                            <TouchableOpacity
+                                onPress={() => setShowPasswordModal(false)}
+                                style={styles.modalCloseButton}
+                            >
+                                <Ionicons name="close" size={24} color="#1A1A1A" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <ScrollView showsVerticalScrollIndicator={false}>
+                            {/* Old Password */}
+                            <View style={styles.modalInputContainer}>
+                                <Text style={styles.modalLabel}>Password Lama</Text>
+                                <View style={styles.modalInputWrapper}>
+                                    <TextInput
+                                        style={styles.modalInput}
+                                        placeholder="Masukkan password lama"
+                                        placeholderTextColor="#8e8e93"
+                                        value={oldPassword}
+                                        onChangeText={setOldPassword}
+                                        secureTextEntry={!showOldPassword}
+                                        editable={!isChangingPassword}
+                                    />
+                                    <TouchableOpacity
+                                        onPress={() => setShowOldPassword(!showOldPassword)}
+                                        style={styles.eyeButton}
+                                    >
+                                        <Ionicons
+                                            name={showOldPassword ? "eye-outline" : "eye-off-outline"}
+                                            size={22}
+                                            color="#8e8e93"
+                                        />
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+
+                            {/* New Password */}
+                            <View style={styles.modalInputContainer}>
+                                <Text style={styles.modalLabel}>Password Baru</Text>
+                                <View style={styles.modalInputWrapper}>
+                                    <TextInput
+                                        style={styles.modalInput}
+                                        placeholder="Masukkan password baru (min 6 karakter)"
+                                        placeholderTextColor="#8e8e93"
+                                        value={newPassword}
+                                        onChangeText={setNewPassword}
+                                        secureTextEntry={!showNewPassword}
+                                        editable={!isChangingPassword}
+                                    />
+                                    <TouchableOpacity
+                                        onPress={() => setShowNewPassword(!showNewPassword)}
+                                        style={styles.eyeButton}
+                                    >
+                                        <Ionicons
+                                            name={showNewPassword ? "eye-outline" : "eye-off-outline"}
+                                            size={22}
+                                            color="#8e8e93"
+                                        />
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+
+                            {/* Confirm Password */}
+                            <View style={styles.modalInputContainer}>
+                                <Text style={styles.modalLabel}>Konfirmasi Password Baru</Text>
+                                <View style={styles.modalInputWrapper}>
+                                    <TextInput
+                                        style={styles.modalInput}
+                                        placeholder="Konfirmasi password baru"
+                                        placeholderTextColor="#8e8e93"
+                                        value={confirmPassword}
+                                        onChangeText={setConfirmPassword}
+                                        secureTextEntry={!showConfirmPassword}
+                                        editable={!isChangingPassword}
+                                    />
+                                    <TouchableOpacity
+                                        onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                                        style={styles.eyeButton}
+                                    >
+                                        <Ionicons
+                                            name={showConfirmPassword ? "eye-outline" : "eye-off-outline"}
+                                            size={22}
+                                            color="#8e8e93"
+                                        />
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+
+                            {/* Password Requirements */}
+                            <View style={styles.passwordRequirements}>
+                                <Text style={styles.requirementTitle}>Password harus mengandung:</Text>
+                                <View style={styles.requirementItem}>
+                                    <Ionicons
+                                        name={newPassword.length >= 6 ? "checkmark-circle" : "ellipse-outline"}
+                                        size={16}
+                                        color={newPassword.length >= 6 ? "#4CAF50" : "#8e8e93"}
+                                    />
+                                    <Text style={[styles.requirementText, newPassword.length >= 6 && styles.requirementMet]}>
+                                        Minimal 6 karakter
+                                    </Text>
+                                </View>
+                                <View style={styles.requirementItem}>
+                                    <Ionicons
+                                        name={/[A-Z]/.test(newPassword) ? "checkmark-circle" : "ellipse-outline"}
+                                        size={16}
+                                        color={/[A-Z]/.test(newPassword) ? "#4CAF50" : "#8e8e93"}
+                                    />
+                                    <Text style={[styles.requirementText, /[A-Z]/.test(newPassword) && styles.requirementMet]}>
+                                        Mengandung huruf besar (A-Z)
+                                    </Text>
+                                </View>
+                                <View style={styles.requirementItem}>
+                                    <Ionicons
+                                        name={/[a-z]/.test(newPassword) ? "checkmark-circle" : "ellipse-outline"}
+                                        size={16}
+                                        color={/[a-z]/.test(newPassword) ? "#4CAF50" : "#8e8e93"}
+                                    />
+                                    <Text style={[styles.requirementText, /[a-z]/.test(newPassword) && styles.requirementMet]}>
+                                        Mengandung huruf kecil (a-z)
+                                    </Text>
+                                </View>
+                                <View style={styles.requirementItem}>
+                                    <Ionicons
+                                        name={/[0-9]/.test(newPassword) ? "checkmark-circle" : "ellipse-outline"}
+                                        size={16}
+                                        color={/[0-9]/.test(newPassword) ? "#4CAF50" : "#8e8e93"}
+                                    />
+                                    <Text style={[styles.requirementText, /[0-9]/.test(newPassword) && styles.requirementMet]}>
+                                        Mengandung angka (0-9)
+                                    </Text>
+                                </View>
+                            </View>
+
+                            {/* Action Buttons */}
+                            <View style={styles.modalActions}>
+                                <TouchableOpacity
+                                    style={[styles.modalCancelButton]}
+                                    onPress={() => setShowPasswordModal(false)}
+                                    disabled={isChangingPassword}
+                                >
+                                    <Text style={styles.modalCancelText}>Batal</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[styles.modalSaveButton, isChangingPassword && styles.disabledButton]}
+                                    onPress={handleChangePassword}
+                                    disabled={isChangingPassword}
+                                >
+                                    {isChangingPassword ? (
+                                        <ActivityIndicator size="small" color="#FFFFFF" />
+                                    ) : (
+                                        <Text style={styles.modalSaveText}>Edit Password</Text>
+                                    )}
+                                </TouchableOpacity>
+                            </View>
+                        </ScrollView>
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 }
@@ -763,5 +957,130 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: '#8e8e93',
         fontWeight: '400',
+    },
+    // Modal Styles
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    modalContent: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 20,
+        padding: 20,
+        width: '100%',
+        maxHeight: '80%',
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 10,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 20,
+        elevation: 10,
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 20,
+        paddingBottom: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F0F0F0',
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#1A1A1A',
+    },
+    modalCloseButton: {
+        padding: 4,
+    },
+    modalInputContainer: {
+        marginBottom: 16,
+    },
+    modalLabel: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#1A1A1A',
+        marginBottom: 6,
+    },
+    modalInputWrapper: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F8F9FB',
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#E8E8E8',
+        paddingHorizontal: 14,
+    },
+    modalInput: {
+        flex: 1,
+        paddingVertical: 12,
+        fontSize: 16,
+        color: '#1A1A1A',
+    },
+    eyeButton: {
+        padding: 6,
+    },
+    passwordRequirements: {
+        backgroundColor: '#F8F9FB',
+        borderRadius: 12,
+        padding: 12,
+        marginBottom: 20,
+    },
+    requirementTitle: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#6B7280',
+        marginBottom: 8,
+    },
+    requirementItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 4,
+        gap: 8,
+    },
+    requirementText: {
+        fontSize: 13,
+        color: '#6B7280',
+    },
+    requirementMet: {
+        color: '#4CAF50',
+    },
+    modalActions: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        gap: 12,
+        marginTop: 4,
+    },
+    modalCancelButton: {
+        flex: 1,
+        paddingVertical: 14,
+        borderRadius: 12,
+        backgroundColor: '#F0F0F0',
+        alignItems: 'center',
+    },
+    modalCancelText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#6B7280',
+    },
+    modalSaveButton: {
+        flex: 1,
+        paddingVertical: 14,
+        borderRadius: 12,
+        backgroundColor: '#FF6B00',
+        alignItems: 'center',
+    },
+    modalSaveText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#FFFFFF',
+    },
+    disabledButton: {
+        opacity: 0.7,
     },
 });
