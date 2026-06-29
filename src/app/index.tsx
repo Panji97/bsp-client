@@ -1,11 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { Text, View, Image, StyleSheet, TouchableOpacity, ScrollView, useWindowDimensions, Pressable, FlatList, Animated, TextInput, Alert, SafeAreaView, Dimensions, Linking } from 'react-native'
+import { Text, View, Image, StyleSheet, TouchableOpacity, ScrollView, useWindowDimensions, Pressable, FlatList, Animated, TextInput, Alert, SafeAreaView, Linking } from 'react-native'
 import { useRouter } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window')
 
 export default function LandingPage() {
     const router = useRouter()
@@ -34,7 +32,6 @@ export default function LandingPage() {
         }).start()
     }, [])
 
-    // Data dari website BSP
     const servicesList = [
         { id: '1', label: 'Registrasi Sampah', href: '/services/register-waste', icon: 'recycle', description: 'Daftarkan sampah Anda' },
         { id: '2', label: 'Tukar Poin', href: '/services/redeem-points', icon: 'gift', description: 'Tukarkan poin Anda' },
@@ -50,7 +47,6 @@ export default function LandingPage() {
         { id: 'login', label: 'Masuk', href: '/auth/login', icon: 'log-in' }
     ]
 
-    // Data Statistik dari website
     const statsData = [
         { id: '1', number: '5', label: 'Unit Bank Sampah', icon: 'business' },
         { id: '2', number: '628', label: 'Nasabah', icon: 'people' },
@@ -59,14 +55,12 @@ export default function LandingPage() {
         { id: '5', number: '43.48', label: 'Ton CO2-eq', icon: 'leaf' }
     ]
 
-    // Penghargaan dari website
     const awards = [
         { id: '1', title: 'ISDA 2022', level: 'PLATINUM', icon: 'trophy' },
         { id: '2', title: 'ISDA 2021', level: 'GOLD', icon: 'medal' },
         { id: '3', title: 'CSR Awards 2020', level: '', icon: 'ribbon' }
     ]
 
-    // Testimoni dari website
     const testimonials = [
         { id: '1', name: 'Badak', text: 'Semoga dengan pilah sampah ini menjadi segudang emas (Amiin)', rating: 5 },
         { id: '2', name: 'Fasiha Laela Widiya', text: 'Bank sampah pok lisa Bagus sekali', rating: 5 },
@@ -74,7 +68,6 @@ export default function LandingPage() {
         { id: '4', name: 'Fitri', text: 'BSP mantab', rating: 5 }
     ]
 
-    // Data Emisi dari website
     const emissionData = {
         co2: 0.029820579679,
         ch4: 0.00042839381,
@@ -110,7 +103,6 @@ export default function LandingPage() {
         }
     ]
 
-    // Functions
     const showMenu = () => {
         setMenuVisible(true)
         Animated.parallel([
@@ -266,7 +258,6 @@ export default function LandingPage() {
         </View>
     )
 
-    // Render stats items
     const renderStats = () => {
         return statsData.map((stat) => (
             <View key={`stat-${stat.id}`} style={[styles.statItem, isMobile && styles.statItemMobile]}>
@@ -279,7 +270,6 @@ export default function LandingPage() {
         ))
     }
 
-    // Render awards
     const renderAwards = () => {
         return awards.map((award) => (
             <View key={`award-${award.id}`} style={[styles.awardItem, isMobile && styles.awardItemMobile]}>
@@ -296,7 +286,6 @@ export default function LandingPage() {
         <SafeAreaView style={styles.mainContainer}>
             <StatusBar style="dark" />
 
-            {/* Navbar */}
             <View style={[styles.navbar, isMobile && styles.navbarMobile]}>
                 <View style={styles.navContent}>
                     <TouchableOpacity style={styles.logoSection} onPress={() => handleNavigation('/')} activeOpacity={0.8}>
@@ -356,7 +345,6 @@ export default function LandingPage() {
                 </View>
             </View>
 
-            {/* Mobile Menu */}
             {isMobile && menuVisible && (
                 <Animated.View style={[styles.overlay, { opacity: overlayAnim }]}>
                     <Pressable style={styles.overlayPressable} onPress={closeMenu}>
@@ -436,12 +424,9 @@ export default function LandingPage() {
                 </Animated.View>
             )}
 
-            {/* Main Content */}
             <Animated.ScrollView style={[styles.scrollView, { opacity: fadeAnim }]} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-                {/* Hero Section with Banner */}
                 <LinearGradient colors={['#1B5E20', '#2E7D32', '#388E3C']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.heroSection}>
                     <View style={[styles.heroContent, isMobile && styles.heroContentMobile]}>
-                        {/* Banner Image / Logo */}
                         <View style={styles.heroBannerContainer}>
                             <Image source={require('../../assets/images/icon_bspid.png')} style={[styles.heroLogo, isMobile && styles.heroLogoMobile]} resizeMode="contain" />
                             <View style={styles.heroBadgeContainer}>
@@ -474,17 +459,14 @@ export default function LandingPage() {
                             </TouchableOpacity>
                         </View>
 
-                        {/* Awards Section in Hero */}
                         <View style={[styles.heroAwards, isMobile && styles.heroAwardsMobile]}>{renderAwards()}</View>
                     </View>
                 </LinearGradient>
 
-                {/* Stats Section */}
                 <View style={styles.statsSection}>
                     <View style={[styles.statsContainer, isMobile && styles.statsContainerMobile]}>{renderStats()}</View>
                 </View>
 
-                {/* Features Section */}
                 <View style={styles.featuresSection}>
                     <Text style={[styles.sectionTitle, isMobile && styles.sectionTitleMobile]}>Layanan Unggulan</Text>
                     <Text style={[styles.sectionSubtitle, isMobile && styles.sectionSubtitleMobile]}>Solusi cerdas untuk pengelolaan sampah yang berkelanjutan dan menguntungkan</Text>
@@ -529,7 +511,6 @@ export default function LandingPage() {
                     </View>
                 </View>
 
-                {/* Emission Data Section */}
                 <View style={styles.emissionSection}>
                     <Text style={[styles.sectionTitle, isMobile && styles.sectionTitleMobile, styles.sectionTitleWhite]}>Kontribusi Pengurangan Emisi</Text>
                     <Text style={[styles.sectionSubtitle, isMobile && styles.sectionSubtitleMobile, styles.sectionSubtitleWhite]}>Data emisi yang berhasil dikurangi melalui pengelolaan sampah</Text>
@@ -557,7 +538,6 @@ export default function LandingPage() {
                     </View>
                 </View>
 
-                {/* Testimonials Section */}
                 <View style={styles.testimonialsSection}>
                     <Text style={[styles.sectionTitle, isMobile && styles.sectionTitleMobile]}>Apa Kata Mereka?</Text>
                     <Text style={[styles.sectionSubtitle, isMobile && styles.sectionSubtitleMobile]}>Testimoni dari pengguna yang telah merasakan manfaat Bank Sampah Pintar</Text>
@@ -605,7 +585,6 @@ export default function LandingPage() {
                     </View>
                 </View>
 
-                {/* CTA Section */}
                 <LinearGradient colors={['#1B5E20', '#2E7D32']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.ctaSection}>
                     <View style={[styles.ctaContent, isMobile && styles.ctaContentMobile]}>
                         <Text style={[styles.ctaTitle, isMobile && styles.ctaTitleMobile]}>Siap Menjadi Bagian Dari Perubahan?</Text>
@@ -619,7 +598,6 @@ export default function LandingPage() {
                     </View>
                 </LinearGradient>
 
-                {/* Newsletter Section */}
                 <View style={styles.newsletterSection}>
                     <View style={[styles.newsletterContent, isMobile && styles.newsletterContentMobile]}>
                         <Text style={[styles.newsletterTitle, isMobile && styles.newsletterTitleMobile]}>
@@ -643,7 +621,6 @@ export default function LandingPage() {
                     </View>
                 </View>
 
-                {/* Footer */}
                 <View style={styles.footer}>
                     <View style={[styles.footerContent, isMobile && styles.footerContentMobile]}>
                         <View style={[styles.footerColumn, isMobile && styles.footerColumnMobile]}>
@@ -977,7 +954,7 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontWeight: 'bold'
     },
-    // Hero Section
+
     heroSection: {
         paddingVertical: 40,
         paddingHorizontal: 16,
@@ -1177,7 +1154,7 @@ const styles = StyleSheet.create({
     awardLevelMobile: {
         fontSize: 8
     },
-    // Stats Section
+
     statsSection: {
         backgroundColor: '#FFFFFF',
         paddingVertical: 30,
@@ -1235,7 +1212,7 @@ const styles = StyleSheet.create({
     statLabelMobile: {
         fontSize: 10
     },
-    // Features Section
+
     featuresSection: {
         paddingVertical: 40,
         paddingHorizontal: 16,
@@ -1375,7 +1352,7 @@ const styles = StyleSheet.create({
         borderRadius: 3,
         backgroundColor: '#F68B1E'
     },
-    // Emission Section
+
     emissionSection: {
         paddingVertical: 40,
         paddingHorizontal: 16,
@@ -1447,7 +1424,7 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: 'bold'
     },
-    // Testimonials Section
+
     testimonialsSection: {
         paddingVertical: 40,
         paddingHorizontal: 16,
@@ -1512,7 +1489,7 @@ const styles = StyleSheet.create({
         lineHeight: 20,
         fontStyle: 'italic'
     },
-    // CTA Section
+
     ctaSection: {
         paddingVertical: 50,
         paddingHorizontal: 16,
@@ -1574,7 +1551,7 @@ const styles = StyleSheet.create({
     ctaButtonLargeTextMobile: {
         fontSize: 14
     },
-    // Newsletter Section
+
     newsletterSection: {
         backgroundColor: '#FFFFFF',
         paddingVertical: 40,
@@ -1656,7 +1633,7 @@ const styles = StyleSheet.create({
     newsletterButtonTextMobile: {
         fontSize: 13
     },
-    // Footer
+
     footer: {
         backgroundColor: '#1A1A1A',
         paddingTop: 30
